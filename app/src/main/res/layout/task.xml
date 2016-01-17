@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/item_background"
+    android:padding="8dp" >
+
+    <CheckBox
+        android:id="@+id/item_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true" />
+
+    <TextView
+        android:id="@+id/item"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/item_check"
+        android:paddingBottom="8dp"
+        android:textColor="@android:color/holo_blue_dark"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/dueDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@id/item"
+        android:layout_below="@id/item"
+        android:textColor="@android:color/black"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/item_priority"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="@drawable/coloured_box"
+        android:layout_marginEnd="8dp"
+        android:layout_alignParentEnd="true"/>
+
+    <ImageView
+        android:id="@+id/recurring"
+        android:layout_width="wrap_content"
+        android:layout_height="16dp"
+        android:layout_below="@id/item"
+        android:layout_toStartOf="@id/item_priority"
+        android:layout_alignWithParentIfMissing="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/recurring" />
+
+    <ImageView
+        android:id="@+id/reminder"
+        android:layout_width="wrap_content"
+        android:layout_height="16dp"
+        android:layout_below="@id/item"
+        android:layout_toStartOf="@id/recurring"
+        android:scaleType="fitCenter"
+        android:src="@drawable/reminder_icon_32" />
+
+</RelativeLayout>

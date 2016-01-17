@@ -1,0 +1,51 @@
+<resources>
+    <string name="app_name">Reminders 2</string>
+    <string name="app_version">2.0.0</string>
+
+    <string name="intent_action_alarm">com.bufarini.ALARM</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+
+    <!-- begin insert/view task activity -->
+    <string name="taskDetailTitle">Title</string>
+    <string name="taskDetailSetduedate">Set due date</string>
+    <string name="taskDetailRemindme">Remind me</string>
+    <string name="taskDetailPriority">Priority</string>
+    <string name="taskDetailNote">Note</string>
+    <string-array name="reminder_frequencies">
+        <item>Does not repeat</item>
+        <item>Every Minute</item>
+        <item>Every Hour</item>
+        <item>Every Day</item>
+        <item>Every Week</item>
+        <item>Every 2 Weeks</item>
+        <item>Every Month</item>
+        <item>Every Year</item>
+    </string-array>
+    <string-array name="location_spinner_entries">
+        <item>when entering</item>
+        <item>when leaving</item>
+    </string-array>
+    <string-array name="task_priorities">
+        <item>8</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+    </string-array>
+    <string name="chooseLocation">Choose location</string>
+    <string name="clear_text">Clear Text</string>
+    <!-- end insert task activity -->
+
+    <!-- begin Reminders activity -->
+    <string name="hideCompleted">Hide completed</string>
+    <string name="sortByDate">Sort by due date</string>
+    <!-- end Reminders activity -->
+
+</resources>

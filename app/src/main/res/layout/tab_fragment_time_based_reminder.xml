@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/remind_me_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="16dp"
+        android:drawablePadding="8dp"
+        android:drawableStart="@drawable/reminder_icon_32"
+        android:gravity="center_vertical"
+        android:text="@string/taskDetailRemindme" />
+
+    <RelativeLayout
+        android:id="@+id/reminder_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/reminder_day"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:gravity="start"
+            android:paddingEnd="8dp"
+            android:paddingStart="4dp"
+            android:paddingTop="16dp" />
+
+        <TextView
+            android:id="@+id/reminder_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/reminder_day"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="16dp"
+            android:gravity="start"
+            android:paddingEnd="8dp"
+            android:paddingStart="4dp"
+            android:paddingTop="16dp" />
+
+        <ImageButton
+            android:id="@+id/delete_reminder"
+            android:background="@drawable/cancel_16"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:scaleType="centerInside"
+            android:layout_alignBottom="@id/reminder_time"
+            android:layout_alignParentEnd="true" />
+
+        <Spinner
+            android:id="@+id/reminderInterval"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:entries="@array/reminder_frequencies"
+            android:layout_below="@id/reminder_day" />
+    </RelativeLayout>
+</FrameLayout>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <EditText
+        android:id="@+id/taskTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:ems="10"
+        android:hint="@string/taskDetailTitle"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    <EditText
+        android:id="@+id/note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/taskTitle"
+        android:layout_alignWithParentIfMissing="true"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="16dp"
+        android:ems="10"
+        android:hint="@string/taskDetailNote"
+        android:inputType="textMultiLine"
+        android:maxLines="5"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/priority_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/note"
+        android:layout_alignStart="@id/note"
+        android:paddingEnd="10dp"
+        android:paddingStart="4dp"
+        android:paddingTop="10dp"
+        android:gravity="center_vertical"
+        android:text="@string/taskDetailPriority" />
+
+    <Spinner
+        android:id="@+id/priority"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/priority_label"
+        android:layout_below="@id/note"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:paddingTop="4dp"
+        android:layout_marginBottom="32dp"
+        android:layout_toEndOf="@id/priority_label"
+        android:entries="@array/task_priorities"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/due_date_day"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/priority_label"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="12dp"
+        android:paddingEnd="10dp"
+        android:paddingStart="4dp"
+        android:gravity="center_vertical" />
+
+    <TextView
+        android:id="@+id/due_date_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/due_date_day"
+        android:layout_below="@id/priority_label"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="12dp"
+        android:paddingEnd="10dp"
+        android:paddingStart="4dp"
+        android:gravity="center_vertical"/>
+
+    <android.support.design.widget.TabLayout
+        android:id="@+id/tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/due_date_day"
+        android:minHeight="?attr/actionBarSize"/>
+
+    <android.support.v4.view.ViewPager
+        android:id="@+id/pager"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:layout_below="@id/tab_layout"/>
+
+</RelativeLayout>
