@@ -16,11 +16,8 @@ public abstract class DBCommand implements Command {
 
 	@Override
 	final public void execute() {
-		SQLiteDatabase db = dbHelper.getWritableDatabase();
-		try {
+		try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
 			doExecute(db, item);
-		} finally {
-			db.close();
 		}
 	}
 

@@ -132,7 +132,7 @@ public class ManageTaskActivity
     private boolean isTaskHasBeenModified() {
         if (!title.getText().toString().equals(task.title)) return true;
         if (!notes.getText().toString().equals(task.notes)) return true;
-        if (task.reminderDate != task.reminderDate) return true;
+        if (reminderDate != null && task.reminderDate != reminderDate.getTimeInMillis()) return true;
         if (task.dueDate != dueDate.getTimeInMillis()) return true;
         if (task.priority != translatePriorityPosition(priority.getSelectedItemPosition())) return true;
         return false;

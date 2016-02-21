@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static com.danielebufarini.reminders2.util.GoogleService.isNetworkAvailable;
+
 
 public class LoadItems implements Callable<List<GTaskList>> {
     private final boolean isSyncWithGTasksEnabled;
@@ -98,7 +100,7 @@ public class LoadItems implements Callable<List<GTaskList>> {
 
     public List<GTaskList> getLists() {
         List<GTaskList> tasksFromDB = itemsFromDB.loadLists();
-        if (isSyncWithGTasksEnabled) {
+        if (isSyncWithGTasksEnabled && isNetworkAvailable(context)) {
             List<GTaskList> tasksFromGoogle = itemsFromGoogle.loadLists();
             if (!tasksFromGoogle.isEmpty())
                 reconcile(tasksFromDB, tasksFromGoogle);

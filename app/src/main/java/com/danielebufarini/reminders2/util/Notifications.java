@@ -17,19 +17,19 @@ public class Notifications {
     public static final String LIST_ID = "listId";
 
     private static final ConcurrentHashMap<Long, Integer> NOTIFICATION_ID = new ConcurrentHashMap<Long, Integer>(100);
-    private static final ApplicationCache MEMORY_STORE = ApplicationCache.getInstance();
+    private static final ApplicationCache CACHE = ApplicationCache.getInstance();
 
     static {
-        MEMORY_STORE.setAtomicIntValue(0);
+        CACHE.setAtomicIntValue(0);
     }
 
     public static int getNotificationId(long id) {
         Integer newId = NOTIFICATION_ID.get(id);
         if (newId == null) {
-            synchronized (MEMORY_STORE) {
+            synchronized (CACHE) {
                 newId = NOTIFICATION_ID.get(id);
                 if (newId == null) {
-                    newId = MEMORY_STORE.getNextInt();
+                    newId = CACHE.getNextInt();
                     NOTIFICATION_ID.put(id, newId);
                 }
             }
