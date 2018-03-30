@@ -57,14 +57,14 @@ public class LocationBasedReminderFragment extends Fragment
                 .addApi(Places.GEO_DATA_API)
                 .build();
 
-        autoCompleteTextView = (AutoCompleteTextView) getActivity().findViewById(R.id.mapAddress);
+        autoCompleteTextView = getActivity().findViewById(R.id.mapAddress);
         autoCompleteTextView.setOnItemClickListener(autocompleteClickListener);
         adapter = new PlaceAutocompleteAdapter(getActivity(), googleApiClient, BOUNDS_GREATER_SYDNEY,
                 null);
         autoCompleteTextView.setAdapter(adapter);
 
         // Set up the 'clear text' button that clears the text in the autocomplete view
-        ImageButton clearButton = (ImageButton) getActivity().findViewById(R.id.button_clear);
+        ImageButton clearButton = getActivity().findViewById(R.id.button_clear);
         clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -72,7 +72,7 @@ public class LocationBasedReminderFragment extends Fragment
             }
         });
 
-        SeekBar seekBar = (SeekBar) getActivity().findViewById(R.id.seekBar);
+        SeekBar seekBar = getActivity().findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {

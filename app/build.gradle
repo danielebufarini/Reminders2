@@ -2,28 +2,27 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "26.0.2"
-
+    buildToolsVersion '27.0.3'
     defaultConfig {
         applicationId "com.danielebufarini.reminders2"
-        minSdkVersion 23
-        targetSdkVersion 23
+        minSdkVersion 26
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         // Enabling multidex support.
         multiDexEnabled true
     }
-
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    productFlavors {
     }
 }
 
@@ -54,7 +53,7 @@ dependencies {
     compile('com.google.apis:google-api-services-tasks:v1-rev41-1.21.0') {
         exclude group: 'org.apache.httpcomponents'
     }
-    compile ('com.google.http-client:google-http-client-gson:1.19.0') {
+    compile('com.google.http-client:google-http-client-gson:1.19.0') {
         exclude module: 'httpclient'
     }
     compile 'com.google.apis:google-api-services-oauth2:v1-rev100-1.21.0'

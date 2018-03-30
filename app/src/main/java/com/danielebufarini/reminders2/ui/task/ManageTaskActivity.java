@@ -153,12 +153,12 @@ public class ManageTaskActivity
     }
 
     private void setupWidgets() {
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tab_layout);
+        TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addTab(tabLayout.newTab().setIcon(R.mipmap.ic_alarm_black_24dp));
         tabLayout.addTab(tabLayout.newTab().setIcon(R.mipmap.ic_room_black_24dp));
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
-        final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
+        final ViewPager viewPager = findViewById(R.id.pager);
         adapter = new PagerAdapter(getFragmentManager(), tabLayout.getTabCount());
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
@@ -177,12 +177,12 @@ public class ManageTaskActivity
             }
         });
 
-        title = (EditText) findViewById(R.id.taskTitle);
-        notes = (EditText) findViewById(R.id.note);
+        title = findViewById(R.id.taskTitle);
+        notes = findViewById(R.id.note);
 
         dueDate = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
 
-        dueDateDay = (TextView) findViewById(R.id.due_date_day);
+        dueDateDay = findViewById(R.id.due_date_day);
         dueDateDay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -205,7 +205,7 @@ public class ManageTaskActivity
         });
         dueDateDay.setText(Dates.formatDate(dueDate));
 
-        dueDateTime = (TextView) findViewById(R.id.due_date_time);
+        dueDateTime = findViewById(R.id.due_date_time);
         dueDateTime.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -228,7 +228,7 @@ public class ManageTaskActivity
         dueDateTime.setText(String.format(TIME_FORMAT_STRING, dueDate.get(Calendar.HOUR_OF_DAY),
                 dueDate.get(Calendar.MINUTE)));
 
-        priority = (Spinner) findViewById(R.id.priority);
+        priority = findViewById(R.id.priority);
         priority.setAdapter(new PriorityAdapter(this, R.layout.spinner_priority_task, Priority.PRIORITIES));
     }
 
