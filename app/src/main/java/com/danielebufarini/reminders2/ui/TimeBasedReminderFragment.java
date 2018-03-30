@@ -13,7 +13,6 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.TimePicker;
 
 import com.danielebufarini.reminders2.R;
 import com.danielebufarini.reminders2.model.GTask;
@@ -163,14 +162,11 @@ public class TimeBasedReminderFragment extends Fragment {
         reminderTime.setOnClickListener(v -> {
             TimePickerDialog datePicker = new TimePickerDialog(
                     TimeBasedReminderFragment.this.getActivity(),
-                    new TimePickerDialog.OnTimeSetListener() {
-                        @Override
-                        public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                            reminderDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                            reminderDate.set(Calendar.MINUTE, minute);
-                            listener.onReminderDateChanged(reminderDate);
-                            reminderTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
-                        }
+                    (view, hourOfDay, minute) -> {
+                        reminderDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                        reminderDate.set(Calendar.MINUTE, minute);
+                        listener.onReminderDateChanged(reminderDate);
+                        reminderTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
                     },
                     reminderDate.get(Calendar.HOUR_OF_DAY),
                     reminderDate.get(Calendar.MINUTE),

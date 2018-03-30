@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -37,6 +38,7 @@ import com.google.api.services.tasks.Tasks;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Reminders extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -53,7 +55,7 @@ public class Reminders extends AppCompatActivity
     private static final String LOGTAG = "Reminders";
 
     private TaskFragment taskFragment;
-    private volatile int progressBarCounter;
+    private volatile AtomicInteger progressBarCounter;
     private GoogleAccountHelper accountHelper;
     private static final ApplicationCache CACHE = ApplicationCache.getInstance();
 
@@ -197,7 +199,7 @@ public class Reminders extends AppCompatActivity
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
@@ -229,7 +231,7 @@ public class Reminders extends AppCompatActivity
     private void synchroniseAndUpdateUI(final boolean areItemsToBeSaved) {
         //final View progressBar = this.findViewById(R.id.title_refresh_progress);
         runOnUiThread(() -> {
-            ++progressBarCounter;
+            progressBarCounter.incrementAndGet();
             //progressBar.setVisibility(View.VISIBLE);
         });
         final Activity activity = this;
@@ -254,8 +256,7 @@ public class Reminders extends AppCompatActivity
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             activity.runOnUiThread(() -> {
                 folders.setAdapter(adapter);
-                --progressBarCounter;
-                if (progressBarCounter == 0)
+                if (progressBarCounter.decrementAndGet() == 0)
                     ;//progressBar.setVisibility(View.GONE);
             });
         }).start();
