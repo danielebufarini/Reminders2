@@ -1,6 +1,8 @@
 package com.danielebufarini.reminders2.util;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 import com.danielebufarini.reminders2.R;
 import com.google.api.client.extensions.android.http.AndroidHttp;
@@ -19,7 +21,7 @@ public class GoogleService {
     public static final Collection<String> TASKS_SCOPES;
 
     static {
-        TASKS_SCOPES = new ArrayList<String>(1);
+        TASKS_SCOPES = new ArrayList<>(1);
         TASKS_SCOPES.add(TasksScopes.TASKS);
     }
 
@@ -59,5 +61,12 @@ public class GoogleService {
         String appName = context.getResources().getString(R.string.app_name)
                 + "/" + context.getResources().getString(R.string.app_version);
         return appName;
+    }
+
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 }

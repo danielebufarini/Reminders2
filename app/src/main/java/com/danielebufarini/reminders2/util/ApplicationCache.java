@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ApplicationCache {
+public enum ApplicationCache {
+    INSTANCE;
+
     private List<GTaskList> folders = new ArrayList<GTaskList>();
     private AtomicInteger value;
     private int activeFolder;
@@ -18,20 +20,8 @@ public class ApplicationCache {
     private Boolean isSyncWithGTasksEnabled;
     private GTask task;
 
-    private ApplicationCache() {
-    }
-
-    /**
-     * SingletonHolder is loaded on the first execution of
-     * Singleton.getInstance() or the first access to SingletonHolder.INSTANCE,
-     * not before.
-     */
-    private static class SingletonHolder {
-        public static final ApplicationCache INSTANCE = new ApplicationCache();
-    }
-
     public static ApplicationCache getInstance() {
-        return SingletonHolder.INSTANCE;
+        return INSTANCE;
     }
 
     private final static Object listsLock = new Object();

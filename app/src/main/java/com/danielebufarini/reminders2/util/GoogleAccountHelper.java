@@ -17,6 +17,7 @@ public class GoogleAccountHelper {
     private Map<String, Integer> reverseIndex;
 
     public GoogleAccountHelper(Context context) {
+
         this.context = context;
         doGetAccounts();
         accountNames = new String[accounts.length];
@@ -25,6 +26,7 @@ public class GoogleAccountHelper {
     }
 
     private void doGetAccounts() {
+
         Account[] gAccounts = AccountManager.get(context).getAccountsByType("com.google");
         accounts = new Account[gAccounts.length];
         reverseIndex = new HashMap<>(gAccounts.length);
@@ -42,14 +44,17 @@ public class GoogleAccountHelper {
     }
 
     public Account[] getAccounts() {
+
         return accounts;
     }
 
     public String[] getNames() {
+
         return accountNames;
     }
 
     public int getIndex(String selectedAccountName) {
-        return reverseIndex.get(selectedAccountName);
+
+        return reverseIndex.get(selectedAccountName) != null ? reverseIndex.get(selectedAccountName) : 0;
     }
 }

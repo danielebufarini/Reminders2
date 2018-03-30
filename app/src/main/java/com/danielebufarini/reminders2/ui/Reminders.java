@@ -1,5 +1,6 @@
 package com.danielebufarini.reminders2.ui;
 
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -47,6 +48,7 @@ public class Reminders extends AppCompatActivity
     private static final int SYNCHRONISE = 1;
     private static final String NO_ACCOUNT_SETUP = "<no account set up>";
     private static final int CHANGED_GOOGLE_ACCOUNT = 2;
+    private static final int REQUEST_CODE_PICK_ACCOUNT = 3;
     private static final boolean DONT_SAVE_TASKS = false;
     private static final String LOGTAG = "Reminders";
 
@@ -62,30 +64,15 @@ public class Reminders extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        Intent intent = AccountManager.newChooseAccountIntent(null, null, new String[]{"com.google"}, null, null, null, null);
+        startActivityForResult(intent, REQUEST_CODE_PICK_ACCOUNT);
         accountHelper = new GoogleAccountHelper(this);
 
         if (CACHE.isAtomicLongNull())
             CACHE.setAtomicLongValue(0L);
-        if (CACHE.accountName() == null)
-            CACHE.accountName(accountHelper.getAccounts()[0].name);
         if (CACHE.isSyncWithGTasksEnabled() == null)
             CACHE.isSyncWithGTasksEnabled(checkGooglePlayServicesAvailable());
-        if (CACHE.getFolders().isEmpty())
-            authorise(accountHelper.getNames()[accountHelper.getIndex(CACHE.accountName())],
-                    SYNCHRONISE,
-                    new IfAlreadyAuthorised() {
-                        @Override
-                        public void doAction() {
-                            synchroniseAndUpdateUI(DONT_SAVE_TASKS);
-                    }
-                },
-                null
-            );
-
         taskFragment = (TaskFragment) getFragmentManager().findFragmentById(R.id.tasksFragment);
-        setupWidgets();
-
     }
 
     private String[] toArray(List<GTaskList> foldersList) {
@@ -96,10 +83,10 @@ public class Reminders extends AppCompatActivity
     }
 
     private void setupWidgets() {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -108,16 +95,16 @@ public class Reminders extends AppCompatActivity
             }
         });
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        folders = (Spinner) findViewById(R.id.folders);
+        folders = findViewById(R.id.folders);
         folders.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
                 toArray(CACHE.getFolders())));
         folders.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -142,7 +129,7 @@ public class Reminders extends AppCompatActivity
         });
 
         View header = navigationView.getHeaderView(0);
-        Spinner accountName = (Spinner) header.findViewById(R.id.account_name);
+        Spinner accountName = header.findViewById(R.id.account_name);
 
         SharedPreferences settings = getApplicationContext()
                 .getSharedPreferences(Reminders.class.getName(), Context.MODE_PRIVATE);
@@ -236,7 +223,7 @@ public class Reminders extends AppCompatActivity
 
         }
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -359,6 +346,27 @@ public class Reminders extends AppCompatActivity
                         switchAccount(position);*/
                 }
                 break;
+            case REQUEST_CODE_PICK_ACCOUNT:
+                setUpCache(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
+                setupWidgets();
+                break;
         }
+    }
+
+    private void setUpCache(String accountName) {
+
+        if (CACHE.accountName() == null)
+            CACHE.accountName(accountName);
+        if (CACHE.getFolders().isEmpty())
+            authorise(accountHelper.getNames()[accountHelper.getIndex(CACHE.accountName())],
+                    SYNCHRONISE,
+                    new IfAlreadyAuthorised() {
+                        @Override
+                        public void doAction() {
+                            synchroniseAndUpdateUI(DONT_SAVE_TASKS);
+                        }
+                    },
+                    null
+            );
     }
 }
