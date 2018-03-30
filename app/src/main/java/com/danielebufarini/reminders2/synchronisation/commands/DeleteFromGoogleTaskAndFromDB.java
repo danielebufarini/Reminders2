@@ -9,9 +9,9 @@ import com.google.api.services.tasks.Tasks;
 import java.io.IOException;
 
 public class DeleteFromGoogleTaskAndFromDB implements Command {
-	private DatabaseHelper dbHelper;
-	private Tasks googleService;
-	private Item item;
+	private final DatabaseHelper dbHelper;
+	private final Tasks googleService;
+	private final Item item;
 	
 	public DeleteFromGoogleTaskAndFromDB(DatabaseHelper dbHelper, Tasks googleService, Item item) {
 		this.dbHelper = dbHelper;

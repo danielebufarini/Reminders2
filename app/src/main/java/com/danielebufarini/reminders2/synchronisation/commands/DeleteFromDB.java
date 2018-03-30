@@ -16,11 +16,8 @@ public class DeleteFromDB implements Command {
 
 	@Override
 	public void execute() {
-		SQLiteDatabase db = dbHelper.getWritableDatabase();
-		try {
+		try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
 			item.delete(db);
-		} finally {
-			db.close();
 		}
 	}
 }

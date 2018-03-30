@@ -29,10 +29,10 @@ public class InsertInGoogleTaskAndMergeInDB implements Command {
 		} catch (IOException e) {
 			item.isMerged = false;
 			Log.w(TAG, "", e);
-		} 
+		}
 		SQLiteDatabase db = null;
 		try {
-			if (item.isStored && (item.isMerged == true || item.isModified)) {
+			if (item.isStored && (item.isMerged || item.isModified)) {
 				db = dbHelper.getWritableDatabase();
 				item.merge(db);
 			}
