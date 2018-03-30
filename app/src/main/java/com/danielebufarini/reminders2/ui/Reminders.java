@@ -87,12 +87,9 @@ public class Reminders extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent insertNewTask = new Intent(Reminders.this, ManageTaskActivity.class);
-                startActivity(insertNewTask);
-            }
+        fab.setOnClickListener(view -> {
+            Intent insertNewTask = new Intent(Reminders.this, ManageTaskActivity.class);
+            startActivity(insertNewTask);
         });
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
@@ -143,12 +140,7 @@ public class Reminders extends AppCompatActivity
                 if (!CACHE.accountName().equals(account)) {
                     authorise(account,
                             CHANGED_GOOGLE_ACCOUNT,
-                            new IfAlreadyAuthorised() {
-                                @Override
-                                public void doAction() {
-                                    synchroniseAndUpdateUI(true);
-                                }
-                            }, null /*syncButton*/);
+                            () -> synchroniseAndUpdateUI(true), null /*syncButton*/);
                     CACHE.accountName(account);
                 }
             }
@@ -173,7 +165,7 @@ public class Reminders extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -236,44 +228,36 @@ public class Reminders extends AppCompatActivity
 
     private void synchroniseAndUpdateUI(final boolean areItemsToBeSaved) {
         //final View progressBar = this.findViewById(R.id.title_refresh_progress);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ++progressBarCounter;
-                //progressBar.setVisibility(View.VISIBLE);
-            }
+        runOnUiThread(() -> {
+            ++progressBarCounter;
+            //progressBar.setVisibility(View.VISIBLE);
         });
         final Activity activity = this;
-        new Thread(new Runnable() {
-            public void run() {
-                if (areItemsToBeSaved)
-                    new SaveItems(
-                            activity,
-                            CACHE.isSyncWithGTasksEnabled(),
-                            CACHE.accountName(),
-                            new ArrayList<GTaskList>()
-                    ).run();
-                LoadItems loadItems = new LoadItems(activity, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
-                List<GTaskList> taskLists = loadItems.getLists();
-                CACHE.setFolders(taskLists);
-                List<String> folderNames = new ArrayList<>(taskLists.size());
-                for (GTaskList folder : taskLists)
-                    folderNames.add(folder.title);
-                final ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                        Reminders.this, android.R.layout.simple_spinner_item, folderNames
-                );
-                // Specify the layout to use when the list of choices appears
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        folders.setAdapter(adapter);
-                        --progressBarCounter;
-                        if (progressBarCounter == 0)
-                            ;//progressBar.setVisibility(View.GONE);
-                    }
-                });
-            }
+        new Thread(() -> {
+            if (areItemsToBeSaved)
+                new SaveItems(
+                        activity,
+                        CACHE.isSyncWithGTasksEnabled(),
+                        CACHE.accountName(),
+                        new ArrayList<>()
+                ).run();
+            LoadItems loadItems = new LoadItems(activity, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
+            List<GTaskList> taskLists = loadItems.getLists();
+            CACHE.setFolders(taskLists);
+            List<String> folderNames = new ArrayList<>(taskLists.size());
+            for (GTaskList folder : taskLists)
+                folderNames.add(folder.title);
+            final ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    Reminders.this, android.R.layout.simple_spinner_item, folderNames
+            );
+            // Specify the layout to use when the list of choices appears
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            activity.runOnUiThread(() -> {
+                folders.setAdapter(adapter);
+                --progressBarCounter;
+                if (progressBarCounter == 0)
+                    ;//progressBar.setVisibility(View.GONE);
+            });
         }).start();
     }
 
@@ -285,27 +269,22 @@ public class Reminders extends AppCompatActivity
                            final IfAlreadyAuthorised ifAlreadyAuthorised, final ImageButton syncButton) {
         if (!isAccountAuthorised(accountName)) {
             final Tasks googleService = GoogleService.getGoogleTasksService(this, accountName);
-            new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        googleService.tasklists().list().setMaxResults(1L).execute();
-                        saveAuthorisation(accountName);
-                        CACHE.isSyncWithGTasksEnabled(true);
-                        ifAlreadyAuthorised.doAction();
-                        Reminders.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                //syncButton.setVisibility(View.VISIBLE);
-                            }
-                        });
-                    } catch (UserRecoverableAuthIOException userRecoverableException) {
-                        Intent intent = userRecoverableException.getIntent();
-                        intent.putExtra("reminders_position", accountHelper.getIndex(accountName));
-                        startActivityForResult(intent, requestCode);
-                    } catch (IOException e) {
-                        Log.e(LOGTAG, "authorise() :: cannot contact google servers - account = \""
-                                + accountName + "\"", e);
-                    }
+            new Thread(() -> {
+                try {
+                    googleService.tasklists().list().setMaxResults(1L).execute();
+                    saveAuthorisation(accountName);
+                    CACHE.isSyncWithGTasksEnabled(true);
+                    ifAlreadyAuthorised.doAction();
+                    Reminders.this.runOnUiThread(() -> {
+                        //syncButton.setVisibility(View.VISIBLE);
+                    });
+                } catch (UserRecoverableAuthIOException userRecoverableException) {
+                    Intent intent = userRecoverableException.getIntent();
+                    intent.putExtra("reminders_position", accountHelper.getIndex(accountName));
+                    startActivityForResult(intent, requestCode);
+                } catch (IOException e) {
+                    Log.e(LOGTAG, "authorise() :: cannot contact google servers - account = \""
+                            + accountName + "\"", e);
                 }
             }).start();
         } else
@@ -360,12 +339,7 @@ public class Reminders extends AppCompatActivity
         if (CACHE.getFolders().isEmpty())
             authorise(accountHelper.getNames()[accountHelper.getIndex(CACHE.accountName())],
                     SYNCHRONISE,
-                    new IfAlreadyAuthorised() {
-                        @Override
-                        public void doAction() {
-                            synchroniseAndUpdateUI(DONT_SAVE_TASKS);
-                        }
-                    },
+                    () -> synchroniseAndUpdateUI(DONT_SAVE_TASKS),
                     null
             );
     }

@@ -65,12 +65,7 @@ public class LocationBasedReminderFragment extends Fragment
 
         // Set up the 'clear text' button that clears the text in the autocomplete view
         ImageButton clearButton = getActivity().findViewById(R.id.button_clear);
-        clearButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                autoCompleteTextView.setText("");
-            }
-        });
+        clearButton.setOnClickListener(v -> autoCompleteTextView.setText(""));
 
         SeekBar seekBar = getActivity().findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {

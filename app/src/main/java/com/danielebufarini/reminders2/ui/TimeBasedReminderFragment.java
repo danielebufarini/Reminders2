@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.DatePicker;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
@@ -120,79 +119,64 @@ public class TimeBasedReminderFragment extends Fragment {
 
     private void setupWidgets() {
         final GTask task = store.task();
-        final TextView remindMeLabel = (TextView) getActivity().findViewById(R.id.remind_me_label);
-        final RelativeLayout reminderLayout = (RelativeLayout) getActivity().findViewById(R.id.reminder_layout);
+        final TextView remindMeLabel = getActivity().findViewById(R.id.remind_me_label);
+        final RelativeLayout reminderLayout = getActivity().findViewById(R.id.reminder_layout);
         boolean isOnlyLabelVisible = task.reminderDate == 0L;
         remindMeLabel.setVisibility(isOnlyLabelVisible ? View.VISIBLE : View.INVISIBLE);
-        remindMeLabel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                remindMeLabel.setVisibility(View.GONE);
-                reminderLayout.setVisibility(View.VISIBLE);
-            }
+        remindMeLabel.setOnClickListener(v -> {
+            remindMeLabel.setVisibility(View.GONE);
+            reminderLayout.setVisibility(View.VISIBLE);
         });
         reminderLayout.setVisibility(isOnlyLabelVisible ? View.GONE : View.VISIBLE);
-        ImageButton deleteReminder = (ImageButton) getActivity().findViewById(R.id.delete_reminder);
-        deleteReminder.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                remindMeLabel.setVisibility(View.VISIBLE);
-                reminderLayout.setVisibility(View.GONE);
-                task.reminderDate = 0L;
-                task.reminderInterval = 0L;
-            }
+        ImageButton deleteReminder = getActivity().findViewById(R.id.delete_reminder);
+        deleteReminder.setOnClickListener(v -> {
+            remindMeLabel.setVisibility(View.VISIBLE);
+            reminderLayout.setVisibility(View.GONE);
+            task.reminderDate = 0L;
+            task.reminderInterval = 0L;
         });
 
-        final Spinner interval = (Spinner) getActivity().findViewById(R.id.reminderInterval);
+        final Spinner interval = getActivity().findViewById(R.id.reminderInterval);
         interval.setSelection(INTERVALS_MAP.get(task.getReminderInterval()));
 
         reminderDate = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
 
-        reminderDay = (TextView) getActivity().findViewById(R.id.reminder_day);
-        reminderDay.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DatePickerDialog datePickerDialog = new DatePickerDialog(
-                        TimeBasedReminderFragment.this.getActivity(),
-                        new DatePickerDialog.OnDateSetListener() {
-                            @Override
-                            public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                                Calendar newDate = Calendar.getInstance();
-                                newDate.set(year, monthOfYear, dayOfMonth);
-                                reminderDay.setText(Dates.formatDate(newDate));
-                                listener.onReminderDateChanged(reminderDate);
-                            }
-                        },
-                        reminderDate.get(Calendar.YEAR),
-                        reminderDate.get(Calendar.MONTH),
-                        reminderDate.get(Calendar.DAY_OF_MONTH)
-                );
-                datePickerDialog.show();
-            }
+        reminderDay = getActivity().findViewById(R.id.reminder_day);
+        reminderDay.setOnClickListener(v -> {
+            DatePickerDialog datePickerDialog = new DatePickerDialog(
+                    TimeBasedReminderFragment.this.getActivity(),
+                    (view, year, monthOfYear, dayOfMonth) -> {
+                        Calendar newDate = Calendar.getInstance();
+                        newDate.set(year, monthOfYear, dayOfMonth);
+                        reminderDay.setText(Dates.formatDate(newDate));
+                        listener.onReminderDateChanged(reminderDate);
+                    },
+                    reminderDate.get(Calendar.YEAR),
+                    reminderDate.get(Calendar.MONTH),
+                    reminderDate.get(Calendar.DAY_OF_MONTH)
+            );
+            datePickerDialog.show();
         });
         reminderDay.setText(Dates.formatDate(reminderDate));
 
-        reminderTime = (TextView) getActivity().findViewById(R.id.reminder_time);
-        reminderTime.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TimePickerDialog datePicker = new TimePickerDialog(
-                        TimeBasedReminderFragment.this.getActivity(),
-                        new TimePickerDialog.OnTimeSetListener() {
-                            @Override
-                            public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                reminderDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                reminderDate.set(Calendar.MINUTE, minute);
-                                listener.onReminderDateChanged(reminderDate);
-                                reminderTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
-                            }
-                        },
-                        reminderDate.get(Calendar.HOUR_OF_DAY),
-                        reminderDate.get(Calendar.MINUTE),
-                        true
-                );
-                datePicker.show();
-            }
+        reminderTime = getActivity().findViewById(R.id.reminder_time);
+        reminderTime.setOnClickListener(v -> {
+            TimePickerDialog datePicker = new TimePickerDialog(
+                    TimeBasedReminderFragment.this.getActivity(),
+                    new TimePickerDialog.OnTimeSetListener() {
+                        @Override
+                        public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                            reminderDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                            reminderDate.set(Calendar.MINUTE, minute);
+                            listener.onReminderDateChanged(reminderDate);
+                            reminderTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
+                        }
+                    },
+                    reminderDate.get(Calendar.HOUR_OF_DAY),
+                    reminderDate.get(Calendar.MINUTE),
+                    true
+            );
+            datePicker.show();
         });
         reminderTime.setText(String.format(TIME_FORMAT_STRING, reminderDate.get(Calendar.HOUR_OF_DAY),
                 reminderDate.get(Calendar.MINUTE)));

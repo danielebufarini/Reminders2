@@ -45,8 +45,8 @@ public class TaskFragment extends Fragment implements Serializable {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        ListView tasks = (ListView) getActivity().findViewById(R.id.tasksList);
-        adapter = new TaskAdapter(getActivity(), R.layout.task, new ArrayList<GTask>(30));
+        ListView tasks = getActivity().findViewById(R.id.tasksList);
+        adapter = new TaskAdapter(getActivity(), R.layout.task, new ArrayList<>(30));
         tasks.setAdapter(adapter);
         SwipeDismissListViewTouchListener touchListener =
             new SwipeDismissListViewTouchListener(
