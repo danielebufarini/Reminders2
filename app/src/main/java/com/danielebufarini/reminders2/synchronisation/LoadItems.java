@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static com.danielebufarini.reminders2.model.Item.generateId;
 import static com.danielebufarini.reminders2.util.GoogleService.isNetworkAvailable;
 
 
@@ -35,7 +36,7 @@ public class LoadItems implements Callable<List<GTaskList>> {
             SQLiteDatabase db = databaseHelper.getWritableDatabase();
             try {
                 for (T item : googleItems) {
-                    item.id = item.generateId();
+                    item.id = generateId();
                     item.insert(db);
                     dbItems.add(item);
                 }
@@ -110,7 +111,7 @@ public class LoadItems implements Callable<List<GTaskList>> {
     }
 
     @Override
-    public List<GTaskList> call() throws Exception {
+    public List<GTaskList> call() {
         return getLists();
     }
 }

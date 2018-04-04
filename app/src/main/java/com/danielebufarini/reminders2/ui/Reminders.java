@@ -38,6 +38,8 @@ import com.google.api.services.tasks.Tasks;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Reminders extends AppCompatActivity
@@ -46,6 +48,7 @@ public class Reminders extends AppCompatActivity
     public static final int REFRESH_TASKS = 3;
     public static final String PREF_ACCOUNT_NAME = "accountName";
     public static final String PREF_SYNC_GOOGLE_ENABLED = "syncEnabled";
+    public static final boolean LOGV = true;
 
     private static final int SYNCHRONISE = 1;
     private static final String NO_ACCOUNT_SETUP = "<no account set up>";
@@ -53,17 +56,19 @@ public class Reminders extends AppCompatActivity
     private static final int REQUEST_CODE_PICK_ACCOUNT = 3;
     private static final boolean DONT_SAVE_TASKS = false;
     private static final String LOGTAG = "Reminders";
+    private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
 
     private TaskFragment taskFragment;
-    private volatile AtomicInteger progressBarCounter;
+    private volatile AtomicInteger progressBarCounter = new AtomicInteger();
     private GoogleAccountHelper accountHelper;
-    private static final ApplicationCache CACHE = ApplicationCache.getInstance();
+    private final Map<Integer, Command> commands = new ConcurrentHashMap<>(3);
 
     // UI widgets
     private Spinner folders;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Intent intent = AccountManager.newChooseAccountIntent(null, null, new String[]{"com.google"}, null, null, null, null);
@@ -75,9 +80,30 @@ public class Reminders extends AppCompatActivity
         if (CACHE.isSyncWithGTasksEnabled() == null)
             CACHE.isSyncWithGTasksEnabled(checkGooglePlayServicesAvailable());
         taskFragment = (TaskFragment) getFragmentManager().findFragmentById(R.id.tasksFragment);
+        commands.put(SYNCHRONISE, (requestCode, resultCode, data) -> {
+            if (resultCode == Reminders.RESULT_OK) {
+                saveAuthorisation(CACHE.accountName());
+                CACHE.isSyncWithGTasksEnabled(true);
+                synchroniseAndUpdateUI(true);
+            }
+        });
+        commands.put(CHANGED_GOOGLE_ACCOUNT, (requestCode, resultCode, data) -> {
+            if (resultCode == Reminders.RESULT_OK) {
+                int position = data.getIntExtra("reminders_position", 0);
+                saveAuthorisation(accountHelper.getNames()[position]);
+                CACHE.isSyncWithGTasksEnabled(true);
+                    /*if (!selectedAccountName.equals(accountHelper[position].name))
+                        switchAccount(position);*/
+            }
+        });
+        commands.put(REQUEST_CODE_PICK_ACCOUNT, (requestCode, resultCode, data) -> {
+            setUpCache(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
+            setupWidgets();
+        });
     }
 
     private String[] toArray(List<GTaskList> foldersList) {
+
         String[] folders = new String[foldersList.size()];
         for (int i = 0; i < foldersList.size(); ++i)
             folders[i] = foldersList.get(i).title;
@@ -85,6 +111,7 @@ public class Reminders extends AppCompatActivity
     }
 
     private void setupWidgets() {
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -109,6 +136,7 @@ public class Reminders extends AppCompatActivity
         folders.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
                 CACHE.setActiveFolder(position);
                 final GTaskList taskList = CACHE.getFolders().get(position);
                 /*if (taskList.tasks == null)
@@ -124,6 +152,7 @@ public class Reminders extends AppCompatActivity
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
+
             }
         });
 
@@ -138,6 +167,7 @@ public class Reminders extends AppCompatActivity
         accountName.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, final int position, long id) {
+
                 String account = accountHelper.getNames()[position];
                 if (!CACHE.accountName().equals(account)) {
                     authorise(account,
@@ -149,6 +179,7 @@ public class Reminders extends AppCompatActivity
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
+
             }
         });
         accountName.setSelection(accountHelper.getIndex(CACHE.accountName()));
@@ -156,6 +187,7 @@ public class Reminders extends AppCompatActivity
 
     @Override
     protected void onPause() {
+
         super.onPause();
         SharedPreferences settings = getApplicationContext()
                 .getSharedPreferences(Reminders.class.getName(), Context.MODE_PRIVATE);
@@ -167,6 +199,7 @@ public class Reminders extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
+
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
@@ -223,6 +256,7 @@ public class Reminders extends AppCompatActivity
     }
 
     private boolean checkGooglePlayServicesAvailable() {
+
         return !GooglePlayServicesUtil.isUserRecoverableError(
                 GooglePlayServicesUtil.isGooglePlayServicesAvailable(this)
         );
@@ -268,6 +302,7 @@ public class Reminders extends AppCompatActivity
 
     private void authorise(final String accountName, final int requestCode,
                            final IfAlreadyAuthorised ifAlreadyAuthorised, final ImageButton syncButton) {
+
         if (!isAccountAuthorised(accountName)) {
             final Tasks googleService = GoogleService.getGoogleTasksService(this, accountName);
             new Thread(() -> {
@@ -293,6 +328,7 @@ public class Reminders extends AppCompatActivity
     }
 
     private void saveAuthorisation(String accountName) {
+
         SharedPreferences settings = getApplicationContext()
                 .getSharedPreferences(Reminders.class.getName(), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = settings.edit();
@@ -301,36 +337,22 @@ public class Reminders extends AppCompatActivity
     }
 
     private boolean isAccountAuthorised(String accountName) {
+
         SharedPreferences settings = getApplicationContext()
                 .getSharedPreferences(Reminders.class.getName(), Context.MODE_PRIVATE);
         return settings.getBoolean(accountName, false);
     }
 
+    interface Command {
+
+        void execute(int requestCode, int resultCode, Intent data);
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
         super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case SYNCHRONISE:
-                if (resultCode == Reminders.RESULT_OK) {
-                    saveAuthorisation(CACHE.accountName());
-                    CACHE.isSyncWithGTasksEnabled(true);
-                    synchroniseAndUpdateUI(true);
-                }
-                break;
-            case CHANGED_GOOGLE_ACCOUNT:
-                if (resultCode == Reminders.RESULT_OK) {
-                    int position = data.getIntExtra("reminders_position", 0);
-                    saveAuthorisation(accountHelper.getNames()[position]);
-                    CACHE.isSyncWithGTasksEnabled(true);
-                    /*if (!selectedAccountName.equals(accountHelper[position].name))
-                        switchAccount(position);*/
-                }
-                break;
-            case REQUEST_CODE_PICK_ACCOUNT:
-                setUpCache(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
-                setupWidgets();
-                break;
-        }
+        commands.get(requestCode).execute(requestCode, resultCode, data);
     }
 
     private void setUpCache(String accountName) {

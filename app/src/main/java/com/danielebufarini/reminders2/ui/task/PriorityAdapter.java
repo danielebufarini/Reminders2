@@ -39,8 +39,8 @@ public class PriorityAdapter extends ArrayAdapter<Priority> {
             li.inflate(R.layout.spinner_priority_task, rowView, true);
             rowView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
             holder = new ViewHolder();
-            holder.value = (TextView) rowView.findViewById(R.id.priority_value);
-            holder.colour = (TextView) rowView.findViewById(R.id.priority_colour);
+            holder.value = rowView.findViewById(R.id.priority_value);
+            holder.colour = rowView.findViewById(R.id.priority_colour);
             convertView = rowView;
             convertView.setTag(holder);
         } else

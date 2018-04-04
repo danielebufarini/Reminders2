@@ -17,7 +17,7 @@ public class Notifications {
     public static final String LIST_ID = "listId";
 
     private static final ConcurrentHashMap<Long, Integer> NOTIFICATION_ID = new ConcurrentHashMap<Long, Integer>(100);
-    private static final ApplicationCache CACHE = ApplicationCache.getInstance();
+    private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
 
     static {
         CACHE.setAtomicIntValue(0);

@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -41,12 +40,14 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
     }
 
     public TaskAdapter(Context context, int resource, List<GTask> items) {
+
         super(context, resource, items);
         this.context = context;
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+
         ViewHolder taskViewHolder;
         if (convertView == null) {
             LinearLayout rowView = new LinearLayout(context);
@@ -54,18 +55,18 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
             li.inflate(R.layout.task, rowView, true);
             rowView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
             taskViewHolder = new ViewHolder();
-            taskViewHolder.title = (TextView) rowView.findViewById(R.id.item);
-            taskViewHolder.completed = (CheckBox) rowView.findViewById(R.id.item_check);
-            taskViewHolder.dueDate = (TextView) rowView.findViewById(R.id.dueDate);
-            taskViewHolder.reminder = (ImageView) rowView.findViewById(R.id.reminder);
-            taskViewHolder.recurring = (ImageView) rowView.findViewById(R.id.recurring);
-            taskViewHolder.priority = (TextView) rowView.findViewById(R.id.item_priority);
+            taskViewHolder.title = rowView.findViewById(R.id.item);
+            taskViewHolder.completed = rowView.findViewById(R.id.item_check);
+            taskViewHolder.dueDate = rowView.findViewById(R.id.dueDate);
+            taskViewHolder.reminder = rowView.findViewById(R.id.reminder);
+            taskViewHolder.recurring = rowView.findViewById(R.id.recurring);
+            taskViewHolder.priority = rowView.findViewById(R.id.item_priority);
             //taskViewHolder.handle = (DragGripView) rowView.findViewById(R.id.drag_handle);
             //taskViewHolder.noHandle = (DragGripView) rowView.findViewById(R.id.no_handle);
             convertView = rowView;
             convertView.setTag(taskViewHolder);
-		} else
-			taskViewHolder = (ViewHolder) convertView.getTag();
+        } else
+            taskViewHolder = (ViewHolder) convertView.getTag();
         final GTask task = getItem(position);
         if (task.reminderDate < System.currentTimeMillis() && task.reminderInterval == 0)
             task.reminderDate = 0;
@@ -79,18 +80,15 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
         taskViewHolder.completed.setOnCheckedChangeListener(null);
         taskViewHolder.completed.setChecked(isChecked);
         taskViewHolder.completed.setOnCheckedChangeListener(
-                new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                        if (isChecked)
-                            Notifications.cancelReminder(context, task);
-                        else if (task.reminderDate > 0)
-                            Notifications.setReminder(context, task);
-                        task.completed = isChecked ? System.currentTimeMillis() : 0;
-                        task.isModified = true;
-                        task.updated = System.currentTimeMillis();
-                        notifyDataSetChanged();
-                    }
+                (buttonView, isChecked1) -> {
+                    if (isChecked1)
+                        Notifications.cancelReminder(context, task);
+                    else if (task.reminderDate > 0)
+                        Notifications.setReminder(context, task);
+                    task.completed = isChecked1 ? System.currentTimeMillis() : 0;
+                    task.isModified = true;
+                    task.updated = System.currentTimeMillis();
+                    notifyDataSetChanged();
                 }
         );
         if (task.dueDate > 0) {

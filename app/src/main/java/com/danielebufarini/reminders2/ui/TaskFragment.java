@@ -24,7 +24,7 @@ import java.util.List;
 public class TaskFragment extends Fragment implements Serializable {
     public static final String TASK = "task";
     public static final String TASK_POSITION = "task_position";
-    private static final ApplicationCache CACHE = ApplicationCache.getInstance();
+    private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
 
     private List<GTask> deletedTasks = new ArrayList<>(30);
     private TaskAdapter adapter;

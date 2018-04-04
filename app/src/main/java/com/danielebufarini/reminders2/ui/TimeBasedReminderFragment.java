@@ -47,14 +47,15 @@ public class TimeBasedReminderFragment extends Fragment {
 
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
+    private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
 
-    private final ApplicationCache store = ApplicationCache.getInstance();
     private OnReminderDateChangedListener listener;
     private TextView reminderDay, reminderTime;
     private Calendar reminderDate;
     private String param1, param2;
 
     public static TimeBasedReminderFragment newInstance(String param1, String param2) {
+
         TimeBasedReminderFragment fragment = new TimeBasedReminderFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
@@ -69,6 +70,7 @@ public class TimeBasedReminderFragment extends Fragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             param1 = getArguments().getString(ARG_PARAM1);
@@ -84,42 +86,48 @@ public class TimeBasedReminderFragment extends Fragment {
     }
 
     private void attachListener(Activity activity) {
+
         try {
             listener = (OnReminderDateChangedListener) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString()
-                    + " must implement OnReminderDateChangedListener");
+                    + " must implement " + OnReminderDateChangedListener.class.getSimpleName());
         }
     }
 
     @Override
     public void onAttach(Context context) {
+
         super.onAttach(context);
         attachListener((Activity) context);
     }
 
     @Override
     public void onAttach(Activity activity) {
+
         super.onAttach(activity);
         attachListener(activity);
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
+
         super.onViewCreated(view, savedInstanceState);
         setupWidgets();
     }
 
     @Override
     public void onDetach() {
+
         super.onDetach();
         listener = null;
     }
 
     private void setupWidgets() {
-        final GTask task = store.task();
-        final TextView remindMeLabel = getActivity().findViewById(R.id.remind_me_label);
-        final RelativeLayout reminderLayout = getActivity().findViewById(R.id.reminder_layout);
+
+        GTask task = CACHE.getTask();
+        TextView remindMeLabel = getActivity().findViewById(R.id.remind_me_label);
+        RelativeLayout reminderLayout = getActivity().findViewById(R.id.reminder_layout);
         boolean isOnlyLabelVisible = task.reminderDate == 0L;
         remindMeLabel.setVisibility(isOnlyLabelVisible ? View.VISIBLE : View.INVISIBLE);
         remindMeLabel.setOnClickListener(v -> {
@@ -134,12 +142,9 @@ public class TimeBasedReminderFragment extends Fragment {
             task.reminderDate = 0L;
             task.reminderInterval = 0L;
         });
-
-        final Spinner interval = getActivity().findViewById(R.id.reminderInterval);
+        Spinner interval = getActivity().findViewById(R.id.reminderInterval);
         interval.setSelection(INTERVALS_MAP.get(task.getReminderInterval()));
-
         reminderDate = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
-
         reminderDay = getActivity().findViewById(R.id.reminder_day);
         reminderDay.setOnClickListener(v -> {
             DatePickerDialog datePickerDialog = new DatePickerDialog(
@@ -157,7 +162,6 @@ public class TimeBasedReminderFragment extends Fragment {
             datePickerDialog.show();
         });
         reminderDay.setText(Dates.formatDate(reminderDate));
-
         reminderTime = getActivity().findViewById(R.id.reminder_time);
         reminderTime.setOnClickListener(v -> {
             TimePickerDialog datePicker = new TimePickerDialog(
@@ -179,6 +183,7 @@ public class TimeBasedReminderFragment extends Fragment {
     }
 
     public interface OnReminderDateChangedListener {
+
         void onReminderDateChanged(Calendar reminderDate);
     }
 

@@ -12,17 +12,15 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.text.util.Linkify;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.TimePicker;
 
 import com.danielebufarini.reminders2.R;
 import com.danielebufarini.reminders2.database.DatabaseHelper;
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.Priority;
+import com.danielebufarini.reminders2.ui.LocationBasedReminderFragment;
 import com.danielebufarini.reminders2.ui.PagerAdapter;
 import com.danielebufarini.reminders2.ui.TaskFragment;
 import com.danielebufarini.reminders2.ui.TimeBasedReminderFragment;
@@ -34,15 +32,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-public class ManageTaskActivity
-        extends AppCompatActivity
-        implements TimeBasedReminderFragment.OnReminderDateChangedListener {
+public class ManageTaskActivity extends AppCompatActivity
+        implements TimeBasedReminderFragment.OnReminderDateChangedListener,
+        LocationBasedReminderFragment.OnReminderPlaceChangedListener {
 
-    public final static String TIME_FORMAT_STRING = "%02d:%02d";
+    public static final String TIME_FORMAT_STRING = "%02d:%02d";
+    private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
 
-    private final ApplicationCache store = ApplicationCache.getInstance();
     private TextView dueDateDay, dueDateTime;
-    private PagerAdapter adapter;
     private EditText title, notes;
     private Spinner priority;
     private GTask task = null;
@@ -50,9 +47,12 @@ public class ManageTaskActivity
     private Integer taskPosition;
     private Calendar dueDate;
     private boolean isEditingExistingTask;
+    private double latitude, longitude;
+    private CharSequence locationTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_task);
 
@@ -66,23 +66,26 @@ public class ManageTaskActivity
             task = (GTask) savedInstanceState.getSerializable(TaskFragment.TASK);
 
         setupWidgets();
-        if (task != null)
+        if (task != null) {
             updateWidgets(task);
-        else
+        } else {
             task = createEmptyTask();
+        }
 
-        store.task(task);
+        CACHE.setTask(task);
         isEditingExistingTask = taskPosition != null;
     }
 
     @Override
     protected void onPause() {
+
         super.onPause();
-        store.task(null);
+        CACHE.setTask(null);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
         int id = item.getItemId();
 
         if (id == android.R.id.home) {
@@ -116,6 +119,7 @@ public class ManageTaskActivity
     }
 
     private void storeItemInDB() {
+
         DatabaseHelper databaseHelper = new DatabaseHelper(this);
         try (SQLiteDatabase db = databaseHelper.getWritableDatabase()) {
             if (isEditingExistingTask)
@@ -126,21 +130,29 @@ public class ManageTaskActivity
     }
 
     private int translatePriorityPosition(int position) {
+
         return position == 0 ? Priority.NONE.getPriority() : position;
     }
 
     private boolean isTaskHasBeenModified() {
+
         if (!title.getText().toString().equals(task.title)) return true;
         if (!notes.getText().toString().equals(task.notes)) return true;
-        if (reminderDate != null && task.reminderDate != reminderDate.getTimeInMillis()) return true;
+        if (reminderDate != null && task.reminderDate != reminderDate.getTimeInMillis())
+            return true;
         if (task.dueDate != dueDate.getTimeInMillis()) return true;
-        if (task.priority != translatePriorityPosition(priority.getSelectedItemPosition())) return true;
+        if (task.priority != translatePriorityPosition(priority.getSelectedItemPosition()))
+            return true;
+        if (Double.compare(task.latitude, latitude) != 0) return true;
+        if (Double.compare(task.longitude, longitude) != 0) return true;
+        if (task.locationTitle.equals(locationTitle.toString())) return true;
         return false;
     }
 
     private void updateModel() {
+
         List<GTask> tasks =
-                (List<GTask>) store.getFolders().get(store.getActiveFolder()).getChildren();
+                (List<GTask>) CACHE.getFolders().get(CACHE.getActiveFolder()).getChildren();
         tasks.remove(tasks.get(tasks.indexOf(task)));
         task.title = title.getText().toString();
         task.notes = notes.getText().toString();
@@ -149,31 +161,38 @@ public class ManageTaskActivity
         task.updated = System.currentTimeMillis();
         task.reminderDate = reminderDate == null ? 0 : reminderDate.getTimeInMillis();
         task.priority = translatePriorityPosition(priority.getSelectedItemPosition());
+        task.latitude = latitude;
+        task.longitude = longitude;
+        task.locationTitle = locationTitle != null ? locationTitle.toString() : "";
         tasks.add(task);
     }
 
     private void setupWidgets() {
+
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addTab(tabLayout.newTab().setIcon(R.mipmap.ic_alarm_black_24dp));
         tabLayout.addTab(tabLayout.newTab().setIcon(R.mipmap.ic_room_black_24dp));
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
         final ViewPager viewPager = findViewById(R.id.pager);
-        adapter = new PagerAdapter(getFragmentManager(), tabLayout.getTabCount());
+        PagerAdapter adapter = new PagerAdapter(getFragmentManager(), tabLayout.getTabCount());
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+
                 viewPager.setCurrentItem(tab.getPosition());
             }
 
             @Override
             public void onTabUnselected(TabLayout.Tab tab) {
+
             }
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
+
             }
         });
 
@@ -183,56 +202,45 @@ public class ManageTaskActivity
         dueDate = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
 
         dueDateDay = findViewById(R.id.due_date_day);
-        dueDateDay.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DatePickerDialog datePickerDialog = new DatePickerDialog(ManageTaskActivity.this,
-                        new DatePickerDialog.OnDateSetListener() {
-                            @Override
-                            public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                                dueDate.set(Calendar.YEAR, year);
-                                dueDate.set(Calendar.MONTH, monthOfYear);
-                                dueDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                                dueDateDay.setText(Dates.formatDate(dueDate));
-                            }
-                        },
-                        dueDate.get(Calendar.YEAR),
-                        dueDate.get(Calendar.MONTH),
-                        dueDate.get(Calendar.DAY_OF_MONTH)
-                );
-                datePickerDialog.show();
-            }
+        dueDateDay.setOnClickListener(v -> {
+
+            DatePickerDialog datePickerDialog = new DatePickerDialog(ManageTaskActivity.this,
+                    (view, year, monthOfYear, dayOfMonth) -> {
+
+                        dueDate.set(Calendar.YEAR, year);
+                        dueDate.set(Calendar.MONTH, monthOfYear);
+                        dueDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                        dueDateDay.setText(Dates.formatDate(dueDate));
+                    },
+                    dueDate.get(Calendar.YEAR),
+                    dueDate.get(Calendar.MONTH),
+                    dueDate.get(Calendar.DAY_OF_MONTH)
+            );
+            datePickerDialog.show();
         });
         dueDateDay.setText(Dates.formatDate(dueDate));
-
         dueDateTime = findViewById(R.id.due_date_time);
-        dueDateTime.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TimePickerDialog datePicker = new TimePickerDialog(ManageTaskActivity.this,
-                        new TimePickerDialog.OnTimeSetListener() {
-                            @Override
-                            public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                dueDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                dueDate.set(Calendar.MINUTE, minute);
-                                dueDateTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
-                            }
-                        },
-                        dueDate.get(Calendar.HOUR_OF_DAY),
-                        dueDate.get(Calendar.MINUTE),
-                        true
-                );
-                datePicker.show();
-            }
+        dueDateTime.setOnClickListener(v -> {
+            TimePickerDialog datePicker = new TimePickerDialog(ManageTaskActivity.this,
+                    (view, hourOfDay, minute) -> {
+                        dueDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                        dueDate.set(Calendar.MINUTE, minute);
+                        dueDateTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
+                    },
+                    dueDate.get(Calendar.HOUR_OF_DAY),
+                    dueDate.get(Calendar.MINUTE),
+                    true
+            );
+            datePicker.show();
         });
         dueDateTime.setText(String.format(TIME_FORMAT_STRING, dueDate.get(Calendar.HOUR_OF_DAY),
                 dueDate.get(Calendar.MINUTE)));
-
         priority = findViewById(R.id.priority);
         priority.setAdapter(new PriorityAdapter(this, R.layout.spinner_priority_task, Priority.PRIORITIES));
     }
 
     private void updateWidgets(GTask task) {
+
         title.setText(task.title);
         Linkify.addLinks(title, Linkify.ALL);
         notes.setText(task.notes);
@@ -249,10 +257,11 @@ public class ManageTaskActivity
     private static final String EMPTY_STRING = "";
 
     private GTask createEmptyTask() {
+
         GTask task = new GTask();
         task.title = "";
         task.googleId = "";
-        task.accountName = store.accountName();
+        task.accountName = CACHE.accountName();
         task.notes = EMPTY_STRING;
         task.priority = 0;
         task.level = 0;
@@ -263,6 +272,15 @@ public class ManageTaskActivity
 
     @Override
     public void onReminderDateChanged(Calendar reminderDate) {
+
         this.reminderDate = reminderDate;
+    }
+
+    @Override
+    public void onReminderPlaceChanged(double latitude, double longitude, CharSequence locationTitle) {
+
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.locationTitle = locationTitle;
     }
 }

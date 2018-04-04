@@ -2,6 +2,7 @@ package com.danielebufarini.reminders2.model;
 
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.danielebufarini.reminders2.database.Tables;
@@ -35,19 +36,23 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     private static final String LOGTAG = GTask.class.getSimpleName();
 
     public String category, notes, locationTitle;
-    public long completed, dueDate, reminderDate, reminderInterval, latitude, longitude, radius;
+    public long completed, dueDate, reminderDate, reminderInterval, radius;
+    public double latitude, longitude;
     public int priority, level;
     public GTaskList list;
 
     public GTask() {
+
         super();
     }
 
     public GTask(long id) {
+
         super(id);
     }
 
     public GTask(GTask that) {
+
         super(that);
         this.category = that.category;
         this.notes = that.notes;
@@ -66,16 +71,19 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     @Override
     public String toString() {
-        return "GTask[id = \"" + id + "\" :: googleId = \"" + googleId + "\""
-                + (title != null ? " :: title = \"" + title + "\"" : "") + "]";
+
+        return "GTask[ id = \"" + id + "\" :: googleId = \"" + googleId + "\""
+                + (title != null ? " :: title = \"" + title + "\"" : "") + " ]";
     }
 
     @Override
-    public int compareTo(GTask that) {
-        return this.dueDate < that.dueDate ? -1 : (this.dueDate == that.dueDate ? 0 : 1);
+    public int compareTo(@NonNull GTask that) {
+
+        return Long.compare(this.dueDate, that.dueDate);
     }
 
     private ContentValues getValues() {
+
         ContentValues values = new ContentValues();
         values.put(Tables.ID, id);
         values.put(Tables.TITLE, title);
@@ -102,24 +110,28 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     @Override
     public void insert(SQLiteDatabase db) {
+
         db.insert(Tables.TASK_TABLE, null, getValues());
         Log.d(LOGTAG, "db :: inserted task " + this + " in list " + list);
     }
 
     @Override
     public void delete(SQLiteDatabase db) {
+
         db.delete(Tables.TASK_TABLE,
-                Tables.ID + "=?", new String[] {Long.toString(id)});
+                Tables.ID + "=?", new String[]{Long.toString(id)});
         Log.d(LOGTAG, "db :: deleted task " + this + " in list " + list);
     }
 
     @Override
     public void merge(SQLiteDatabase db) {
-        db.update(Tables.TASK_TABLE, getValues(), Tables.ID + "=?", new String[] {Long.toString(id)});
+
+        db.update(Tables.TASK_TABLE, getValues(), Tables.ID + "=?", new String[]{Long.toString(id)});
         Log.d(LOGTAG, "db :: updated task " + this + " in list " + list);
     }
 
     private Task newTask() {
+
         Task task = new Task();
         task.setTitle(title);
         task.setNotes(notes);
@@ -133,6 +145,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     @Override
     public void insert(Tasks googleService) throws IOException {
+
         Task task = newTask();
         Task newTask = googleService.tasks().insert(list.googleId, task).execute();
         googleId = newTask.getId();
@@ -141,12 +154,14 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     @Override
     public void delete(Tasks googleService) throws IOException {
+
         googleService.tasks().delete(list.googleId, googleId).execute();
         Log.d(LOGTAG, "google :: deleted task " + this + " in list " + list);
     }
 
     @Override
     public void merge(Tasks googleService) throws IOException {
+
         Task task = newTask();
         task.setId(googleId);
         googleService.tasks().update(list.googleId, task.getId(), task).execute();
@@ -155,11 +170,13 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     @Override
     public boolean hasChildren() {
+
         return false;
     }
 
     @Override
     public List<? extends Item> getChildren() {
+
         return EMPTY_LIST;
     }
 
@@ -170,62 +187,76 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     @Override
     public boolean hasReminder() {
+
         return true;
     }
 
     @Override
     public long getReminder() {
+
         return reminderDate;
     }
 
     @Override
     public void setReminder(long reminder) {
+
         this.reminderDate = reminder;
     }
 
     @Override
     public long getReminderInterval() {
+
         return reminderInterval;
     }
 
     @Override
     public void setReminderInterval(long interval) {
+
         this.reminderInterval = interval;
     }
 
-    public long getLatitude() {
+    public double getLatitude() {
+
         return latitude;
     }
 
-    public void setLatitude(long latitude) {
+    public void setLatitude(double latitude) {
+
         this.latitude = latitude;
     }
 
-    public long getLongitude() {
+    public double getLongitude() {
+
         return longitude;
     }
 
-    public void setLongitude(long longitude) {
+    public void setLongitude(double longitude) {
+
         this.longitude = longitude;
     }
 
     public long getRadius() {
+
         return radius;
     }
 
     public void setRadius(long radius) {
+
         this.radius = radius;
     }
 
     public String getLocationTitle() {
+
         return locationTitle;
     }
 
     public void setLocationTitle(String locationTitle) {
+
         this.locationTitle = locationTitle;
     }
 
     private String extractTagValue(final String source, final int index, final String tag) {
+
         String result = null;
         if (index > 0) {
             final int idx = source.indexOf(SEPARATOR, index + SEPARATOR.length());
@@ -240,6 +271,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     }
 
     public void parse(final String str) {
+
         final int i = str.indexOf(DUE_TAG);
         final int j = str.indexOf(REMINDER_TAG);
         final int k = str.indexOf(NOTE_TAG);

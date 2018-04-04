@@ -46,6 +46,12 @@
     <!-- begin Reminders activity -->
     <string name="hideCompleted">Hide completed</string>
     <string name="sortByDate">Sort by due date</string>
+    <string name="geofence_transition_entered">Geofence transition entered</string>
+    <string name="geofence_transition_exited">Geofence transition exited</string>
+    <string name="unknown_geofence_transition">Unkwon geofence transition</string>
+    <string name="geofence_transition_invalid_type">Geofence transition error: invalid transition type %1$d</string>
     <!-- end Reminders activity -->
 
+    <string name="alarmPopupTitle1">Reminder</string>
+    <string name="alarmPopupTitle2">due</string>
 </resources>
