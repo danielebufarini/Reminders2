@@ -1,7 +1,6 @@
 package com.danielebufarini.reminders2.ui;
 
 import android.accounts.AccountManager;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -31,6 +30,7 @@ import com.danielebufarini.reminders2.ui.task.ManageTaskActivity;
 import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.danielebufarini.reminders2.util.GoogleAccountHelper;
 import com.danielebufarini.reminders2.util.GoogleService;
+import com.facebook.stetho.Stetho;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.services.tasks.Tasks;
@@ -42,16 +42,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Reminders extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+public class Reminders extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     public static final int REFRESH_TASKS = 3;
     public static final String PREF_ACCOUNT_NAME = "accountName";
     public static final String PREF_SYNC_GOOGLE_ENABLED = "syncEnabled";
     public static final boolean LOGV = true;
 
-    private static final int SYNCHRONISE = 1;
     private static final String NO_ACCOUNT_SETUP = "<no account set up>";
+    private static final int SYNCHRONISE = 1;
     private static final int CHANGED_GOOGLE_ACCOUNT = 2;
     private static final int REQUEST_CODE_PICK_ACCOUNT = 3;
     private static final boolean DONT_SAVE_TASKS = false;
@@ -79,7 +78,7 @@ public class Reminders extends AppCompatActivity
             CACHE.setAtomicLongValue(0L);
         if (CACHE.isSyncWithGTasksEnabled() == null)
             CACHE.isSyncWithGTasksEnabled(checkGooglePlayServicesAvailable());
-        taskFragment = (TaskFragment) getFragmentManager().findFragmentById(R.id.tasksFragment);
+        taskFragment = (TaskFragment) getSupportFragmentManager().findFragmentById(R.id.tasksFragment);
         commands.put(SYNCHRONISE, (requestCode, resultCode, data) -> {
             if (resultCode == Reminders.RESULT_OK) {
                 saveAuthorisation(CACHE.accountName());
@@ -100,6 +99,7 @@ public class Reminders extends AppCompatActivity
             setUpCache(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
             setupWidgets();
         });
+        Stetho.initializeWithDefaults(this);
     }
 
     private String[] toArray(List<GTaskList> foldersList) {
@@ -268,7 +268,7 @@ public class Reminders extends AppCompatActivity
             progressBarCounter.incrementAndGet();
             //progressBar.setVisibility(View.VISIBLE);
         });
-        final Activity activity = this;
+        AppCompatActivity activity = this;
         new Thread(() -> {
             if (areItemsToBeSaved)
                 new SaveItems(
@@ -352,7 +352,9 @@ public class Reminders extends AppCompatActivity
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         super.onActivityResult(requestCode, resultCode, data);
-        commands.get(requestCode).execute(requestCode, resultCode, data);
+        Command command = commands.get(requestCode);
+        if (command != null)
+            command.execute(requestCode, resultCode, data);
     }
 
     private void setUpCache(String accountName) {

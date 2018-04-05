@@ -1,14 +1,16 @@
 package com.danielebufarini.reminders2.ui;
 
 import android.Manifest;
-import android.app.Activity;
-import android.app.Fragment;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.v13.app.ActivityCompat;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,13 +38,15 @@ import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import static com.danielebufarini.reminders2.ui.LocationBasedReminderFragment.MapVisibility.NOT_VISIBILE;
+import static com.danielebufarini.reminders2.ui.LocationBasedReminderFragment.MapVisibility.VISIBLE;
 import static com.danielebufarini.reminders2.ui.Reminders.LOGV;
 
 public class LocationBasedReminderFragment extends Fragment implements OnMapReadyCallback {
@@ -57,9 +61,10 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     private GeofencingClient geofencingClient;
     private PendingIntent geofencePendingIntent;
     private OnReminderPlaceChangedListener listener;
+    private SupportMapFragment mapFragment;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.tab_fragment_location_based_reminder, container, false);
@@ -82,9 +87,10 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
         SeekBar seekBar = getActivity().findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
-        MapFragment mapFragment = (MapFragment) getChildFragmentManager().findFragmentById(R.id.map);
+        mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         geofencingClient = LocationServices.getGeofencingClient(getActivity());
+        updateMap();
     }
 
     @Override
@@ -105,14 +111,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     public void onAttach(Context context) {
 
         super.onAttach(context);
-        attachListener((Activity) context);
-    }
-
-    @Override
-    public void onAttach(Activity activity) {
-
-        super.onAttach(activity);
-        attachListener(activity);
+        attachListener((AppCompatActivity) context);
     }
 
     @Override
@@ -122,7 +121,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
         listener = null;
     }
 
-    private void attachListener(Activity activity) {
+    private void attachListener(AppCompatActivity activity) {
 
         try {
             listener = (OnReminderPlaceChangedListener) activity;
@@ -135,8 +134,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
+     * This is where we can add markers or lines, add listeners or move the camera.
      * If Google Play services is not installed on the device, the user will be prompted to install
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
@@ -145,22 +143,41 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     public void onMapReady(GoogleMap googleMap) {
 
         map = googleMap;
-        double latitude, longitude;
-        String title;
+        updateMap();
+    }
+
+    private void updateMap() {
+
         GTask task = ApplicationCache.INSTANCE.getTask();
         if (task == null || (Double.compare(task.longitude, 0d) == 0 || Double.compare(task.latitude, 0d) == 0)) {
-            latitude = -34;
-            longitude = -151;
-            title = "Marker in Sydney";
-        } else {
-            latitude = task.latitude;
-            longitude = task.longitude;
-            title = task.title;
+            setVisibilityForMapFragment(NOT_VISIBILE);
+        } else if (map != null) {
+            double latitude = task.latitude;
+            double longitude = task.longitude;
+            String title = task.title;
+            setVisibilityForMapFragment(VISIBLE);
+            LatLng place = new LatLng(latitude, longitude);
+            map.addMarker(new MarkerOptions().position(place).title(title));
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(place, 10));
+            map.animateCamera(CameraUpdateFactory.zoomTo(18), 2000, null);
         }
-        LatLng place = new LatLng(latitude, longitude);
-        map.addMarker(new MarkerOptions().position(place).title(title));
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(place, 10));
-        map.animateCamera(CameraUpdateFactory.zoomTo(18), 2000, null);
+    }
+
+    enum MapVisibility {
+        VISIBLE, NOT_VISIBILE
+    }
+
+    private void setVisibilityForMapFragment(MapVisibility visibility) {
+
+        if (mapFragment != null) {
+            FragmentTransaction ft = getFragmentManager().beginTransaction();
+            if (visibility == VISIBLE) {
+                ft.show(mapFragment);
+            } else {
+                ft.hide(mapFragment);
+            }
+            ft.commit();
+        }
     }
 
     private SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
@@ -207,6 +224,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
                     .getPlaceById(googleApiClient, placeId);
             placeResult.setResultCallback(updatePlaceDetailsCallback);
             Log.i(TAG, "Called getPlaceById to get Place details for " + placeId);
+            setVisibilityForMapFragment(VISIBLE);
         }
     };
 

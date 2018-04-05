@@ -145,7 +145,8 @@ public class ManageTaskActivity extends AppCompatActivity
             return true;
         if (Double.compare(task.latitude, latitude) != 0) return true;
         if (Double.compare(task.longitude, longitude) != 0) return true;
-        if (task.locationTitle.equals(locationTitle.toString())) return true;
+        if (locationTitle != null && task.locationTitle.equals(locationTitle.toString()))
+            return true;
         return false;
     }
 
@@ -175,7 +176,7 @@ public class ManageTaskActivity extends AppCompatActivity
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
         final ViewPager viewPager = findViewById(R.id.pager);
-        PagerAdapter adapter = new PagerAdapter(getFragmentManager(), tabLayout.getTabCount());
+        PagerAdapter adapter = new PagerAdapter(getSupportFragmentManager(), tabLayout.getTabCount());
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -252,6 +253,9 @@ public class ManageTaskActivity extends AppCompatActivity
             dueDateTime.setText(String.format(TIME_FORMAT_STRING, dueDate.get(Calendar.HOUR_OF_DAY),
                     dueDate.get(Calendar.MINUTE)));
         }
+        latitude = task.latitude;
+        longitude = task.longitude;
+        locationTitle = task.locationTitle;
     }
 
     private static final String EMPTY_STRING = "";

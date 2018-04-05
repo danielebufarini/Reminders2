@@ -1,11 +1,11 @@
 package com.danielebufarini.reminders2.ui;
 
-import android.app.Activity;
 import android.app.DatePickerDialog;
-import android.app.Fragment;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -85,7 +85,7 @@ public class TimeBasedReminderFragment extends Fragment {
         return inflater.inflate(R.layout.tab_fragment_time_based_reminder, container, false);
     }
 
-    private void attachListener(Activity activity) {
+    private void attachListener(AppCompatActivity activity) {
 
         try {
             listener = (OnReminderDateChangedListener) activity;
@@ -99,14 +99,7 @@ public class TimeBasedReminderFragment extends Fragment {
     public void onAttach(Context context) {
 
         super.onAttach(context);
-        attachListener((Activity) context);
-    }
-
-    @Override
-    public void onAttach(Activity activity) {
-
-        super.onAttach(activity);
-        attachListener(activity);
+        attachListener((AppCompatActivity) context);
     }
 
     @Override
