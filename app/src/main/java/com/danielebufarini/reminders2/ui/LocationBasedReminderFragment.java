@@ -20,6 +20,7 @@ import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
+import android.widget.TextView;
 
 import com.danielebufarini.reminders2.R;
 import com.danielebufarini.reminders2.model.GTask;
@@ -43,6 +44,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import static com.danielebufarini.reminders2.ui.LocationBasedReminderFragment.MapVisibility.NOT_VISIBILE;
@@ -53,6 +55,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
 
     private static final String TAG = "LocationReminderFragm";
 
+    private GTask task = ApplicationCache.INSTANCE.getTask();
     private AutoCompleteTextView autoCompleteTextView;
     private GoogleApiClient googleApiClient;
     private PlaceAutocompleteAdapter adapter;
@@ -62,6 +65,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     private PendingIntent geofencePendingIntent;
     private OnReminderPlaceChangedListener listener;
     private SupportMapFragment mapFragment;
+    private Marker marker;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -83,6 +87,14 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
         // Set up the 'clear text' button that clears the text in the autocomplete view
         ImageButton clearButton = getActivity().findViewById(R.id.button_clear);
         clearButton.setOnClickListener(v -> autoCompleteTextView.setText(""));
+
+        ImageButton deleteLocation = getActivity().findViewById(R.id.location_button_clear);
+        deleteLocation.setOnClickListener(view -> {
+            if (marker != null) marker.remove();
+            View locationBar = getActivity().findViewById(R.id.locationBar);
+            locationBar.setVisibility(View.GONE);
+            setMapVisibility(NOT_VISIBILE);
+        });
 
         SeekBar seekBar = getActivity().findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
@@ -134,7 +146,6 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera.
      * If Google Play services is not installed on the device, the user will be prompted to install
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
@@ -148,16 +159,17 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
 
     private void updateMap() {
 
-        GTask task = ApplicationCache.INSTANCE.getTask();
+        View locationBar = getActivity().findViewById(R.id.locationBar);
         if (task == null || (Double.compare(task.longitude, 0d) == 0 || Double.compare(task.latitude, 0d) == 0)) {
-            setVisibilityForMapFragment(NOT_VISIBILE);
+            setMapVisibility(NOT_VISIBILE);
+            locationBar.setVisibility(View.GONE);
         } else if (map != null) {
-            double latitude = task.latitude;
-            double longitude = task.longitude;
-            String title = task.title;
-            setVisibilityForMapFragment(VISIBLE);
-            LatLng place = new LatLng(latitude, longitude);
-            map.addMarker(new MarkerOptions().position(place).title(title));
+            TextView location = getActivity().findViewById(R.id.location_map_as_string);
+            location.setText(task.locationTitle);
+            locationBar.setVisibility(View.VISIBLE);
+            setMapVisibility(VISIBLE);
+            LatLng place = new LatLng(task.latitude, task.longitude);
+            marker = map.addMarker(new MarkerOptions().position(place).title(task.title).draggable(true));
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(place, 10));
             map.animateCamera(CameraUpdateFactory.zoomTo(18), 2000, null);
         }
@@ -167,7 +179,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
         VISIBLE, NOT_VISIBILE
     }
 
-    private void setVisibilityForMapFragment(MapVisibility visibility) {
+    private void setMapVisibility(MapVisibility visibility) {
 
         if (mapFragment != null) {
             FragmentTransaction ft = getFragmentManager().beginTransaction();
@@ -220,11 +232,10 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
              Issue a request to the Places Geo Data API to retrieve a Place object with additional
              details about the place.
               */
-            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
-                    .getPlaceById(googleApiClient, placeId);
+            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(googleApiClient, placeId);
             placeResult.setResultCallback(updatePlaceDetailsCallback);
             Log.i(TAG, "Called getPlaceById to get Place details for " + placeId);
-            setVisibilityForMapFragment(VISIBLE);
+            setMapVisibility(VISIBLE);
         }
     };
 
@@ -244,26 +255,20 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
                 places.release();
                 return;
             }
-
             View view = getActivity().getCurrentFocus();
             if (view != null) {
                 InputMethodManager imm =
                         (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
             }
-
             Place place = places.get(0);
             if (LOGV) Log.i(TAG, "Place details received: " + place.getName());
             listener.onReminderPlaceChanged(place.getLatLng().latitude, place.getLatLng().longitude, place.getAddress());
-            GTask task = ApplicationCache.INSTANCE.getTask();
             task.latitude = place.getLatLng().latitude;
             task.longitude = place.getLatLng().longitude;
             task.locationTitle = place.getAddress().toString();
-
-            map.addMarker(new MarkerOptions().position(place.getLatLng()).title(place.getName().toString()));
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(), 10));
-            map.animateCamera(CameraUpdateFactory.zoomTo(18), 2000, null);
-
+            if (marker != null) marker.remove();
+            updateMap();
             if (circle == null) {
                 double radiusInMeters = 100.0;
                 int strokeColor = 0xFF0000FF;

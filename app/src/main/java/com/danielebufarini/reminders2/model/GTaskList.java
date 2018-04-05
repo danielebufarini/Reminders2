@@ -1,5 +1,6 @@
 package com.danielebufarini.reminders2.model;
 
+import android.arch.persistence.room.Entity;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
@@ -14,12 +15,14 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity(tableName = "task_lists")
 public class GTaskList extends Item implements Serializable {
     private static final String LOGTAG = GTaskList.class.getSimpleName();
     private static final long serialVersionUID = 1234567890L;
 
     public transient List<GTask> tasks;
-    public boolean isHideCompleted = false, isSortedByDueDate = true;
+    public boolean isHideCompleted = false;
+    public boolean isSortedByDueDate = true;
 
     public GTaskList() {
 

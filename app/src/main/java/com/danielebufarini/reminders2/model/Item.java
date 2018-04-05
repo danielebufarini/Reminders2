@@ -1,5 +1,8 @@
 package com.danielebufarini.reminders2.model;
 
+import android.arch.persistence.room.ColumnInfo;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.danielebufarini.reminders2.util.ApplicationCache;
@@ -10,15 +13,25 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
 public abstract class Item implements Serializable {
     private static final long serialVersionUID = 987654322L;
 
     public static final List<Item> EMPTY_LIST = new ArrayList<Item>(0);
     private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
-    public long id, updated;
-    public String title, googleId, accountName;
-    public boolean isDeleted, isMerged;
-    public transient boolean isModified, isStored;
+
+    @PrimaryKey
+    public long id;
+    @ColumnInfo(name = "updated_date")
+    public long updated;
+    public String title;
+    public String googleId;
+    @ColumnInfo(name = "account_name")
+    public String accountName;
+    public boolean isDeleted;
+    public boolean isMerged;
+    public transient boolean isModified;
+    public transient boolean isStored;
 
     public Item() {
 

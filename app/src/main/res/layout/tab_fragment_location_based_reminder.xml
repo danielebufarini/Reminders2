@@ -16,6 +16,7 @@
             android:entries="@array/location_spinner_entries"/>
 
         <FrameLayout
+            android:id="@+id/searchBar"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_toEndOf="@id/location_spinner"
@@ -31,6 +32,38 @@
 
             <ImageButton
                 android:id="@+id/button_clear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"
+                android:scaleType="fitCenter"
+                android:layout_gravity="end|center_vertical"
+                android:background="@android:drawable/ic_delete" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/locationBar"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/searchBar"
+            android:foregroundGravity="center" >
+
+            <TextView
+                android:id="@+id/location_map_as_string"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:text="via Lazio 7, 20900 Monza, MB, Italy"
+                android:fontFamily="monospace"
+                android:gravity="bottom"
+                android:paddingEnd="8dp"
+                android:paddingStart="4dp"
+                android:paddingTop="16dp" />
+
+            <ImageButton
+                android:id="@+id/location_button_clear"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"

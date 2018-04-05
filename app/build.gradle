@@ -56,5 +56,9 @@ dependencies {
         exclude module: 'httpclient'
     }
     compile 'com.google.apis:google-api-services-oauth2:v1-rev100-1.21.0'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.github.citux:datetimepicker:0.1.2'
+    implementation "android.arch.lifecycle:common-java8:1.1.1"
+    implementation "android.arch.persistence.room:runtime:1.1.0-beta1"
+    annotationProcessor "android.arch.persistence.room:compiler:1.1.0-beta1"
 }

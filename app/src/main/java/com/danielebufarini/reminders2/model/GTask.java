@@ -1,5 +1,7 @@
 package com.danielebufarini.reminders2.model;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.NonNull;
@@ -17,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
+@Entity(tableName = "tasks")
 public class GTask extends Item implements Comparable<GTask>, Serializable {
     private static final long serialVersionUID = 987654321L;
 
@@ -35,22 +38,33 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     private static final String TASK_COMPLETED = "completed", NEEDS_ACTION = "needsAction";
     private static final String LOGTAG = GTask.class.getSimpleName();
 
-    public String category, notes, locationTitle;
-    public long completed, dueDate, reminderDate, reminderInterval, radius;
-    public double latitude, longitude;
-    public int priority, level;
-    public GTaskList list;
+    public String category;
+    public String notes;
+    public String locationTitle;
+    public long completed;
+    public long dueDate;
+    public long reminderDate;
+    public long reminderInterval;
+    public long radius;
+    public double latitude;
+    public double longitude;
+    public int priority;
+    public int level;
+    @Ignore public GTaskList list;
+    public long listId;
 
     public GTask() {
 
         super();
     }
 
+    @Ignore
     public GTask(long id) {
 
         super(id);
     }
 
+    @Ignore
     public GTask(GTask that) {
 
         super(that);
@@ -79,7 +93,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     @Override
     public int compareTo(@NonNull GTask that) {
 
-        return Long.compare(this.dueDate, that.dueDate);
+        return Long.compare(dueDate, that.dueDate);
     }
 
     private ContentValues getValues() {
