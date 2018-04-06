@@ -34,7 +34,7 @@ import java.util.TimeZone;
 
 public class ManageTaskActivity extends AppCompatActivity
         implements TimeBasedReminderFragment.OnReminderDateChangedListener,
-        LocationBasedReminderFragment.OnReminderPlaceChangedListener {
+            LocationBasedReminderFragment.OnReminderPlaceChangedListener {
 
     public static final String TIME_FORMAT_STRING = "%02d:%02d";
     private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
@@ -154,7 +154,10 @@ public class ManageTaskActivity extends AppCompatActivity
 
         List<GTask> tasks =
                 (List<GTask>) CACHE.getFolders().get(CACHE.getActiveFolder()).getChildren();
-        tasks.remove(tasks.get(tasks.indexOf(task)));
+        int taskIndex = tasks.indexOf(task);
+        if (taskIndex > 0) {
+            tasks.remove(tasks.get(taskIndex));
+        }
         task.title = title.getText().toString();
         task.notes = notes.getText().toString();
         task.dueDate = dueDate.getTimeInMillis();
@@ -271,6 +274,7 @@ public class ManageTaskActivity extends AppCompatActivity
         task.level = 0;
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;
+        task.setList(CACHE.getFolders().get(CACHE.getActiveFolder()));
         return task;
     }
 
