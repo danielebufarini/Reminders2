@@ -44,7 +44,7 @@ public class Notifications {
         alarmIntent.putExtra(Notifications.ID, task.id);
         alarmIntent.putExtra(Notifications.TITLE, task.title);
         alarmIntent.putExtra(Notifications.DUE_DATE, task.dueDate);
-        alarmIntent.putExtra(Notifications.LIST_ID, task.list.id);
+        alarmIntent.putExtra(Notifications.LIST_ID, task.getList().id);
         alarmIntent.putExtra("task", task);
         PendingIntent alarmPendingIntent =
                 PendingIntent.getBroadcast(context, getNotificationId(task.id), alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -64,7 +64,7 @@ public class Notifications {
             if (task.title != null)
                 alarmIntent.putExtra(Notifications.TITLE, task.title);
             alarmIntent.putExtra(Notifications.DUE_DATE, task.dueDate);
-            alarmIntent.putExtra(Notifications.LIST_ID, task.list.id);
+            alarmIntent.putExtra(Notifications.LIST_ID, task.getList().id);
             alarmIntent.putExtra("task", task);
             PendingIntent alarmPendingIntent =
                     PendingIntent.getBroadcast(context, getNotificationId(task.id), alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);

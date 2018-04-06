@@ -1,13 +1,15 @@
 package com.danielebufarini.reminders2.model;
 
+import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.Ignore;
-import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.danielebufarini.reminders2.database.Tables;
+import com.danielebufarini.reminders2.services.AsyncHandler;
+import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.model.Task;
@@ -19,7 +21,13 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
-@Entity(tableName = "tasks")
+import static android.arch.persistence.room.ForeignKey.CASCADE;
+
+@Entity(tableName = "task",
+        foreignKeys = @ForeignKey(entity = GTaskList.class,
+                                    parentColumns = "id",
+                                    childColumns = "list_id",
+                                    onDelete = CASCADE))
 public class GTask extends Item implements Comparable<GTask>, Serializable {
     private static final long serialVersionUID = 987654321L;
 
@@ -40,18 +48,28 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     public String category;
     public String notes;
+    @ColumnInfo(name = "reminder_location_title")
     public String locationTitle;
+    @Ignore
     public long completed;
+    @ColumnInfo(name = "due_date")
     public long dueDate;
+    @ColumnInfo(name = "reminder_date")
     public long reminderDate;
+    @ColumnInfo(name = "reminder_interval")
     public long reminderInterval;
+    @ColumnInfo(name = "reminder_location_radius")
     public long radius;
+    @ColumnInfo(name = "reminder_location_lat")
     public double latitude;
+    @ColumnInfo(name = "reminder_location_lng")
     public double longitude;
     public int priority;
     public int level;
-    @Ignore public GTaskList list;
-    public long listId;
+    @Ignore
+    private GTaskList list;
+    @ColumnInfo(name = "list_id")
+    private long listId;
 
     public GTask() {
 
@@ -96,51 +114,24 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         return Long.compare(dueDate, that.dueDate);
     }
 
-    private ContentValues getValues() {
-
-        ContentValues values = new ContentValues();
-        values.put(Tables.ID, id);
-        values.put(Tables.TITLE, title);
-        values.put(Tables.DELETED, isDeleted);
-        values.put(Tables.GTASK_ID, googleId);
-        values.put(Tables.CATEGORY, category);
-        values.put(Tables.NOTES, notes);
-        values.put(Tables.COMPLETED, completed);
-        values.put(Tables.UPDATED, updated);
-        values.put(Tables.PRIORITY, priority);
-        values.put(Tables.LEVEL, level);
-        values.put(Tables.DUE_DATE, dueDate);
-        values.put(Tables.REMINDER_DATE, reminderDate);
-        values.put(Tables.REMINDER_INTERVAL, reminderInterval);
-        values.put(Tables.REMINDER_LOCATION_LAT, latitude);
-        values.put(Tables.REMINDER_LOCATION_LNG, longitude);
-        values.put(Tables.REMINDER_LOCATION_RADIUS, radius);
-        values.put(Tables.REMINDER_LOCATION_TITLE, locationTitle);
-        values.put(Tables.MERGED, isMerged);
-        values.put(Tables.LIST_ID, list.id);
-        values.put(Tables.ACCOUNT_NAME, accountName);
-        return values;
-    }
-
     @Override
     public void insert(SQLiteDatabase db) {
 
-        db.insert(Tables.TASK_TABLE, null, getValues());
+        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().insert(this));
         Log.d(LOGTAG, "db :: inserted task " + this + " in list " + list);
     }
 
     @Override
     public void delete(SQLiteDatabase db) {
 
-        db.delete(Tables.TASK_TABLE,
-                Tables.ID + "=?", new String[]{Long.toString(id)});
+        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().delete(this));
         Log.d(LOGTAG, "db :: deleted task " + this + " in list " + list);
     }
 
     @Override
     public void merge(SQLiteDatabase db) {
 
-        db.update(Tables.TASK_TABLE, getValues(), Tables.ID + "=?", new String[]{Long.toString(id)});
+        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().update(this));
         Log.d(LOGTAG, "db :: updated task " + this + " in list " + list);
     }
 
@@ -229,44 +220,25 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         this.reminderInterval = interval;
     }
 
-    public double getLatitude() {
+    public GTaskList getList() {
 
-        return latitude;
+        return list;
     }
 
-    public void setLatitude(double latitude) {
+    public void setList(GTaskList list) {
 
-        this.latitude = latitude;
+        this.list = list;
+        listId = list.id;
     }
 
-    public double getLongitude() {
+    public long getListId() {
 
-        return longitude;
+        return listId;
     }
 
-    public void setLongitude(double longitude) {
+    public void setListId(long listId) {
 
-        this.longitude = longitude;
-    }
-
-    public long getRadius() {
-
-        return radius;
-    }
-
-    public void setRadius(long radius) {
-
-        this.radius = radius;
-    }
-
-    public String getLocationTitle() {
-
-        return locationTitle;
-    }
-
-    public void setLocationTitle(String locationTitle) {
-
-        this.locationTitle = locationTitle;
+        this.listId = listId;
     }
 
     private String extractTagValue(final String source, final int index, final String tag) {

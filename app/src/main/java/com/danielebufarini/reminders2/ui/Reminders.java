@@ -1,6 +1,7 @@
 package com.danielebufarini.reminders2.ui;
 
 import android.accounts.AccountManager;
+import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,7 +24,9 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 
 import com.danielebufarini.reminders2.R;
+import com.danielebufarini.reminders2.database.RemindersDatabase;
 import com.danielebufarini.reminders2.model.GTaskList;
+import com.danielebufarini.reminders2.services.AsyncHandler;
 import com.danielebufarini.reminders2.synchronisation.LoadItems;
 import com.danielebufarini.reminders2.synchronisation.SaveItems;
 import com.danielebufarini.reminders2.ui.task.ManageTaskActivity;
@@ -99,6 +102,8 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
             setUpCache(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
             setupWidgets();
         });
+        CACHE.setDatabase(Room.databaseBuilder(getApplicationContext(),
+                RemindersDatabase.class, RemindersDatabase.NAME).build());
         Stetho.initializeWithDefaults(this);
     }
 
@@ -269,7 +274,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
             //progressBar.setVisibility(View.VISIBLE);
         });
         AppCompatActivity activity = this;
-        new Thread(() -> {
+        AsyncHandler.post(() ->  {
             if (areItemsToBeSaved)
                 new SaveItems(
                         activity,
@@ -293,7 +298,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                 if (progressBarCounter.decrementAndGet() == 0)
                     ;//progressBar.setVisibility(View.GONE);
             });
-        }).start();
+        });
     }
 
     private interface IfAlreadyAuthorised {

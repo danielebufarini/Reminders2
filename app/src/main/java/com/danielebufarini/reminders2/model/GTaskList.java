@@ -1,11 +1,14 @@
 package com.danielebufarini.reminders2.model;
 
+import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.danielebufarini.reminders2.database.Tables;
+import com.danielebufarini.reminders2.services.AsyncHandler;
+import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.model.TaskList;
@@ -15,13 +18,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity(tableName = "task_lists")
+@Entity(tableName = "list")
 public class GTaskList extends Item implements Serializable {
     private static final String LOGTAG = GTaskList.class.getSimpleName();
     private static final long serialVersionUID = 1234567890L;
 
     public transient List<GTask> tasks;
+    @ColumnInfo(name = "hide_completed")
     public boolean isHideCompleted = false;
+    @ColumnInfo(name = "sort_by_date")
     public boolean isSortedByDueDate = true;
 
     public GTaskList() {
@@ -37,7 +42,7 @@ public class GTaskList extends Item implements Serializable {
     public GTaskList(GTaskList that) {
 
         super(that);
-        this.tasks = new ArrayList<GTask>(that.tasks.size());
+        this.tasks = new ArrayList<>(that.tasks.size());
         for (GTask task : that.tasks)
             this.tasks.add(new GTask(task));
         this.isHideCompleted = that.isHideCompleted;
@@ -69,27 +74,21 @@ public class GTaskList extends Item implements Serializable {
     @Override
     public void insert(SQLiteDatabase db) {
 
-        ContentValues values = getValues();
-        db.insert(Tables.LIST_TABLE, null, values);
+        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().insert(this));
         Log.d(LOGTAG, "db :: inserted list " + this);
     }
 
     @Override
     public void delete(SQLiteDatabase db) {
 
-        db.delete(Tables.LIST_TABLE,
-                Tables.ID + "=?", new String[]{Long.toString(id)});
-        db.delete(Tables.TASK_TABLE,
-                Tables.LIST_ID + "=?", new String[]{Long.toString(id)});
+        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().delete(this));
         Log.d(LOGTAG, "db :: deleted list " + this);
     }
 
     @Override
     public void merge(SQLiteDatabase db) {
 
-        ContentValues values = getValues();
-        db.update(Tables.LIST_TABLE, values, Tables.ID + "=?",
-                new String[]{Long.toString(id)});
+        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().update(this));
         Log.d(LOGTAG, "db :: updated list " + this);
     }
 

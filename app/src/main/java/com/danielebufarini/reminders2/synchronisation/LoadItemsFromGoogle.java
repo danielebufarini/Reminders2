@@ -40,7 +40,7 @@ public class LoadItemsFromGoogle implements LoadItemsFromResource {
     			gtask.completed = task.getCompleted() != null ? task.getCompleted().getValue() : 0;
     			gtask.dueDate = task.getDue() != null ? task.getDue().getValue() : 0;
     			gtask.isDeleted = task.getDeleted() != null ? task.getDeleted() : false;
-    			gtask.list = list;
+    			gtask.setList(list);
     			gtask.accountName = accountName;
     			gtasks.add(gtask);
     			Log.d(LOGTAG, "google :: downloaded task " + gtask + " for list " + list);

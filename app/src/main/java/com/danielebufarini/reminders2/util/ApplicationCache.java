@@ -1,5 +1,6 @@
 package com.danielebufarini.reminders2.util;
 
+import com.danielebufarini.reminders2.database.RemindersDatabase;
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.GTaskList;
 
@@ -12,15 +13,16 @@ import java.util.concurrent.atomic.AtomicLong;
 public enum ApplicationCache {
     INSTANCE;
 
-    private List<GTaskList> folders = new ArrayList<GTaskList>();
+    private final static Object listsLock = new Object();
+
+    private List<GTaskList> folders = new ArrayList<>();
     private AtomicInteger value;
     private int activeFolder;
     private String accountName;
     private AtomicLong atomicLong;
     private Boolean isSyncWithGTasksEnabled;
     private GTask task;
-
-    private final static Object listsLock = new Object();
+    private RemindersDatabase database;
 
     public List<GTaskList> getFolders() {
 
@@ -99,5 +101,15 @@ public enum ApplicationCache {
     public void setTask(GTask task) {
 
         this.task = task;
+    }
+
+    public RemindersDatabase getDatabase() {
+
+        return database;
+    }
+
+    public void setDatabase(RemindersDatabase database) {
+
+        this.database = database;
     }
 }

@@ -9,6 +9,7 @@ import com.danielebufarini.reminders2.database.DatabaseHelper;
 import com.danielebufarini.reminders2.database.Tables;
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.GTaskList;
+import com.danielebufarini.reminders2.util.ApplicationCache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,12 +21,23 @@ public class LoadItemsFromDB implements LoadItemsFromResource {
 
     public LoadItemsFromDB(final Context context, String accountName) {
 
-        this.dbHelper = new DatabaseHelper(context);
+//        this.dbHelper = new DatabaseHelper(context);
         this.accountName = accountName;
     }
 
     @Override
     public List<GTask> loadTasks(GTaskList list) {
+
+        List<GTask> tasks = ApplicationCache.INSTANCE.getDatabase().taskDao()
+                .loadAllTasksByListId(list.id, accountName);
+        tasks.forEach(task -> {
+            task.isStored = true;
+            task.setList(list);
+        });
+        return tasks;
+    }
+
+    public List<GTask> loadTasks1(GTaskList list) {
 
         List<GTask> gtasks = new ArrayList<>(20);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -51,7 +63,7 @@ public class LoadItemsFromDB implements LoadItemsFromResource {
                 gtask.longitude = cursor.getDouble(cursor.getColumnIndexOrThrow(Tables.REMINDER_LOCATION_LNG));
                 gtask.locationTitle = cursor.getString(cursor.getColumnIndexOrThrow(Tables.REMINDER_LOCATION_TITLE));
                 gtask.isStored = true;
-                gtask.list = list;
+                gtask.setList(list);
                 gtasks.add(gtask);
                 Log.d(LOGTAG, "db :: downloaded task " + gtask + " for list " + list);
             }
@@ -63,6 +75,13 @@ public class LoadItemsFromDB implements LoadItemsFromResource {
 
     @Override
     public List<GTaskList> loadLists() {
+
+        List<GTaskList> lists = ApplicationCache.INSTANCE.getDatabase().listDao().loadLists(accountName);
+        lists.forEach(list -> list.isStored = true);
+        return lists;
+    }
+
+    public List<GTaskList> loadLists1() {
 
         List<GTaskList> dbItems = new ArrayList<>(30);
         SQLiteDatabase db = dbHelper.getReadableDatabase();

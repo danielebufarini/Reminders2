@@ -2,6 +2,7 @@ package com.danielebufarini.reminders2.model;
 
 import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -20,17 +21,22 @@ public abstract class Item implements Serializable {
     public static final List<Item> EMPTY_LIST = new ArrayList<Item>(0);
     private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
 
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     public long id;
     @ColumnInfo(name = "updated_date")
     public long updated;
     public String title;
+    @ColumnInfo(name = "gtask_id")
     public String googleId;
     @ColumnInfo(name = "account_name")
     public String accountName;
+    @ColumnInfo(name = "deleted")
     public boolean isDeleted;
+    @ColumnInfo(name = "merged")
     public boolean isMerged;
+    @Ignore
     public transient boolean isModified;
+    @Ignore
     public transient boolean isStored;
 
     public Item() {

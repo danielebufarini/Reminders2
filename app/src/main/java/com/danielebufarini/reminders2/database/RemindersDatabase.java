@@ -7,7 +7,10 @@ import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.GTaskList;
 
 @Database(version = 1, entities = {GTask.class, GTaskList.class})
-abstract class RemindersDatabase extends RoomDatabase {
+public abstract class RemindersDatabase extends RoomDatabase {
 
-    abstract public RemindersDao remindersDao();
+    public static final String NAME = "reminders.db";
+
+    public abstract TaskDao taskDao();
+    public abstract ListDao listDao();
 }

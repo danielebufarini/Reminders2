@@ -26,7 +26,7 @@ public class Tables {
     public static final String LIST_ID = "list_id";
     public static final String ACCOUNT_NAME = "account_name";
     public static final String HIDE_COMPLETED = "hide_completed";
-    public static final String SORT_BY_DUE_DATE = "order_by_date";
+    public static final String SORT_BY_DUE_DATE = "sort_by_date";
 
     private static final String GTASKS_SYNCHRONISATION_COLUMNS =
             ID + " integer primary key autoincrement,"
