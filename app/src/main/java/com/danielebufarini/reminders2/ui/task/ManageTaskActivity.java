@@ -274,7 +274,7 @@ public class ManageTaskActivity extends AppCompatActivity
         task.level = 0;
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;
-        task.setList(CACHE.getFolders().get(CACHE.getActiveFolder()));
+        task.list = CACHE.getFolders().get(CACHE.getActiveFolder());
         return task;
     }
 
