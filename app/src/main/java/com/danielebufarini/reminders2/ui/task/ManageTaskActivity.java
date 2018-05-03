@@ -3,7 +3,6 @@ package com.danielebufarini.reminders2.ui.task;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.NavUtils;
@@ -17,7 +16,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.danielebufarini.reminders2.R;
-import com.danielebufarini.reminders2.database.DatabaseHelper;
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.Priority;
 import com.danielebufarini.reminders2.ui.LocationBasedReminderFragment;
@@ -34,7 +32,7 @@ import java.util.TimeZone;
 
 public class ManageTaskActivity extends AppCompatActivity
         implements TimeBasedReminderFragment.OnReminderDateChangedListener,
-            LocationBasedReminderFragment.OnReminderPlaceChangedListener {
+        LocationBasedReminderFragment.OnReminderPlaceChangedListener {
 
     public static final String TIME_FORMAT_STRING = "%02d:%02d";
     private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
@@ -62,8 +60,9 @@ public class ManageTaskActivity extends AppCompatActivity
                 task = (GTask) extras.get(TaskFragment.TASK);
                 taskPosition = extras.getInt(TaskFragment.TASK_POSITION);
             }
-        } else
+        } else {
             task = (GTask) savedInstanceState.getSerializable(TaskFragment.TASK);
+        }
 
         setupWidgets();
         if (task != null) {
@@ -89,7 +88,7 @@ public class ManageTaskActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == android.R.id.home) {
-            if (isTaskHasBeenModified()) {
+            if (hasTaskBeenModified()) {
                 updateModel();
                 storeItemInDB();
             }
@@ -120,13 +119,10 @@ public class ManageTaskActivity extends AppCompatActivity
 
     private void storeItemInDB() {
 
-        DatabaseHelper databaseHelper = new DatabaseHelper(this);
-        try (SQLiteDatabase db = databaseHelper.getWritableDatabase()) {
-            if (isEditingExistingTask)
-                task.merge(db);
-            else
-                task.insert(db);
-        }
+        if (isEditingExistingTask)
+            task.merge();
+        else
+            task.insert();
     }
 
     private int translatePriorityPosition(int position) {
@@ -134,7 +130,7 @@ public class ManageTaskActivity extends AppCompatActivity
         return position == 0 ? Priority.NONE.getPriority() : position;
     }
 
-    private boolean isTaskHasBeenModified() {
+    private boolean hasTaskBeenModified() {
 
         if (!title.getText().toString().equals(task.title)) return true;
         if (!notes.getText().toString().equals(task.notes)) return true;
@@ -274,7 +270,7 @@ public class ManageTaskActivity extends AppCompatActivity
         task.level = 0;
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;
-        task.setList(CACHE.getFolders().get(CACHE.getActiveFolder()));
+        task.setListId(CACHE.getFolders().get(CACHE.getActiveFolder()).id);
         return task;
     }
 

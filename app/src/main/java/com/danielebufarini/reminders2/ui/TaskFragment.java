@@ -94,7 +94,7 @@ public class TaskFragment extends Fragment implements Serializable {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        if (requestCode == Reminders.REFRESH_TASKS) {
+        if (requestCode == Reminders.REFRESH_TASKS && data != null) {
             GTask task = (GTask) data.getSerializableExtra(TASK);
             int position = data.getIntExtra(TASK_POSITION, 0);
             onRefreshTasksList(task, position);
@@ -104,7 +104,8 @@ public class TaskFragment extends Fragment implements Serializable {
     public void onFolderSelected(List<GTask> tasks) {
 
         adapter.clear();
-        adapter.addAll(tasks);
+        if (tasks != null)
+            adapter.addAll(tasks);
     }
 
     public void onRefreshTasksList(GTask task, int position) {

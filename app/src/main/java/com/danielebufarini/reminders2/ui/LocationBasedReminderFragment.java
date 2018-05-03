@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -26,6 +27,7 @@ import com.danielebufarini.reminders2.R;
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.services.GeofenceBroadcastReceiver;
 import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -51,9 +53,12 @@ import static com.danielebufarini.reminders2.ui.LocationBasedReminderFragment.Ma
 import static com.danielebufarini.reminders2.ui.LocationBasedReminderFragment.MapVisibility.VISIBLE;
 import static com.danielebufarini.reminders2.ui.Reminders.LOGV;
 
-public class LocationBasedReminderFragment extends Fragment implements OnMapReadyCallback {
+public class LocationBasedReminderFragment extends Fragment
+        implements OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener {
 
     private static final String TAG = "LocationReminderFragm";
+    // Request code to use when launching the resolution activity
+    private static final int REQUEST_RESOLVE_ERROR = 1001;
 
     private GTask task = ApplicationCache.INSTANCE.getTask();
     private AutoCompleteTextView autoCompleteTextView;
@@ -66,6 +71,7 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     private OnReminderPlaceChangedListener listener;
     private SupportMapFragment mapFragment;
     private Marker marker;
+    private boolean resolvingError = false;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -78,7 +84,12 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
     public void onActivityCreated(Bundle savedInstanceState) {
 
         super.onActivityCreated(savedInstanceState);
-        googleApiClient = new GoogleApiClient.Builder(getActivity()).addApi(Places.GEO_DATA_API).build();
+        googleApiClient = new GoogleApiClient.Builder(getContext())
+                .enableAutoManage(getActivity() /* FragmentActivity */,
+                        this /* OnConnectionFailedListener */)
+                .addApi(Places.GEO_DATA_API)
+                .build();
+        googleApiClient.reconnect();
         autoCompleteTextView = getActivity().findViewById(R.id.mapAddress);
         autoCompleteTextView.setOnItemClickListener(autocompleteClickListener);
         adapter = new PlaceAutocompleteAdapter(getActivity(), googleApiClient, null, null);
@@ -172,6 +183,23 @@ public class LocationBasedReminderFragment extends Fragment implements OnMapRead
             marker = map.addMarker(new MarkerOptions().position(place).title(task.title).draggable(true));
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(place, 10));
             map.animateCamera(CameraUpdateFactory.zoomTo(18), 2000, null);
+        }
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult result) {
+
+        if (resolvingError) {
+            // Already attempting to resolve an error.
+            return;
+        } else if (result.hasResolution()) {
+            try {
+                resolvingError = true;
+                result.startResolutionForResult(getActivity(), REQUEST_RESOLVE_ERROR);
+            } catch (IntentSender.SendIntentException e) {
+                // There was an error with the resolution intent. Try again.
+                googleApiClient.connect();
+            }
         }
     }
 

@@ -1,12 +1,9 @@
 package com.danielebufarini.reminders2.model;
 
-import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
-import android.content.ContentValues;
-import android.database.sqlite.SQLiteDatabase;
+import android.arch.persistence.room.Ignore;
 import android.util.Log;
 
-import com.danielebufarini.reminders2.database.Tables;
 import com.danielebufarini.reminders2.services.AsyncHandler;
 import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.google.api.client.util.DateTime;
@@ -15,18 +12,16 @@ import com.google.api.services.tasks.model.TaskList;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity(tableName = "list")
 public class GTaskList extends Item implements Serializable {
-    private static final String LOGTAG = GTaskList.class.getSimpleName();
+
+    private static transient final String LOGTAG = GTaskList.class.getSimpleName();
     private static final long serialVersionUID = 1234567890L;
 
     public transient List<GTask> tasks;
-    @ColumnInfo(name = "hide_completed")
     public boolean isHideCompleted = false;
-    @ColumnInfo(name = "sort_by_date")
     public boolean isSortedByDueDate = true;
 
     public GTaskList() {
@@ -34,59 +29,46 @@ public class GTaskList extends Item implements Serializable {
         super();
     }
 
-    public GTaskList(long id) {
+    @Override
+    public long getListId() {
 
-        super(id);
+        return id;
     }
 
-    public GTaskList(GTaskList that) {
+    @Override
+    public void setListId(long listId) {
 
-        super(that);
-        this.tasks = new ArrayList<>(that.tasks.size());
-        for (GTask task : that.tasks)
-            this.tasks.add(new GTask(task));
-        this.isHideCompleted = that.isHideCompleted;
-        this.isSortedByDueDate = that.isSortedByDueDate;
+    }
+
+    @Ignore
+    public GTaskList(Long id) {
+
+        super(id);
     }
 
     @Override
     public String toString() {
 
-        return "GTaskList[id = \"" + id + "\" :: googleId = \"" + googleId + "\""
-                + (" :: title = \"" + title + "\"") + "]";
-    }
-
-    private ContentValues getValues() {
-
-        ContentValues values = new ContentValues();
-        values.put(Tables.ID, id);
-        values.put(Tables.TITLE, title);
-        values.put(Tables.DELETED, isDeleted);
-        values.put(Tables.GTASK_ID, googleId);
-        values.put(Tables.UPDATED, updated);
-        values.put(Tables.MERGED, isMerged);
-        values.put(Tables.ACCOUNT_NAME, accountName);
-        values.put(Tables.HIDE_COMPLETED, isHideCompleted);
-        values.put(Tables.SORT_BY_DUE_DATE, isSortedByDueDate);
-        return values;
+        return "GTaskList[ id = \"" + id + "\" :: googleId = \"" + googleId + "\""
+                + (" :: title = \"" + title + "\"") + " ]";
     }
 
     @Override
-    public void insert(SQLiteDatabase db) {
+    public void insert() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().insert(this));
         Log.d(LOGTAG, "db :: inserted list " + this);
     }
 
     @Override
-    public void delete(SQLiteDatabase db) {
+    public void delete() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().delete(this));
         Log.d(LOGTAG, "db :: deleted list " + this);
     }
 
     @Override
-    public void merge(SQLiteDatabase db) {
+    public void merge() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().update(this));
         Log.d(LOGTAG, "db :: updated list " + this);
@@ -149,7 +131,7 @@ public class GTaskList extends Item implements Serializable {
 
     public long getReminder() {
 
-        return 0;
+        return 0L;
     }
 
     public void setReminder(long reminder) {
@@ -158,7 +140,7 @@ public class GTaskList extends Item implements Serializable {
 
     public long getReminderInterval() {
 
-        return 0;
+        return 0L;
     }
 
     public void setReminderInterval(long interval) {

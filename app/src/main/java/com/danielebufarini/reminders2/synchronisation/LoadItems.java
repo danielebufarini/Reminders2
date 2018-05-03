@@ -1,9 +1,7 @@
 package com.danielebufarini.reminders2.synchronisation;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 
-import com.danielebufarini.reminders2.database.DatabaseHelper;
 import com.danielebufarini.reminders2.model.GTaskList;
 import com.danielebufarini.reminders2.model.Item;
 
@@ -11,43 +9,40 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static com.danielebufarini.reminders2.model.Item.generateId;
 import static com.danielebufarini.reminders2.util.GoogleService.isNetworkAvailable;
 
 
 public class LoadItems implements Callable<List<GTaskList>> {
     private final boolean isSyncWithGTasksEnabled;
     private final Context context;
-    private final String accountName;
-    private final LoadItemsFromDB itemsFromDB;
-    private final LoadItemsFromGoogle itemsFromGoogle;
+    private final Database database;
+    private final RemoteServer remoteServer;
 
     public LoadItems(Context context, boolean isSyncWithGTasksEnabled, String accountName) {
+
         this.isSyncWithGTasksEnabled = isSyncWithGTasksEnabled;
         this.context = context;
-        this.accountName = accountName;
-        itemsFromDB = new LoadItemsFromDB(context, accountName);
-        itemsFromGoogle = new LoadItemsFromGoogle(context, accountName);
+        database = new Database(accountName);
+        remoteServer = new RemoteServer(context, accountName);
     }
 
     private <T extends Item> void reconcile(List<T> dbItems, List<T> googleItems) {
+
         if (dbItems.isEmpty()) {
-            DatabaseHelper databaseHelper = new DatabaseHelper(context);
-            SQLiteDatabase db = databaseHelper.getWritableDatabase();
-            try {
-                for (T item : googleItems) {
-                    item.id = generateId();
-                    item.insert(db);
-                    dbItems.add(item);
+            for (T item : googleItems) {
+                item.insert();
+                for (Item child : item.getChildren()) {
+                    child.isStored = true;
+                    child.insert();
                 }
-            } finally {
-                db.close();
+                dbItems.add(item);
             }
         } else {
             for (T dbItem : dbItems)
                 for (T googleItem : googleItems)
                     if (dbItem.googleId.equals(googleItem.googleId)) {
                         googleItem.id = dbItem.id;
+                        googleItem.setListId(dbItem.getListId());
                         googleItem.isStored = dbItem.isStored;
                         if (dbItem.hasChildren())
                             reconcile(dbItem.getChildren(), googleItem.getChildren());
@@ -57,6 +52,7 @@ public class LoadItems implements Callable<List<GTaskList>> {
     }
 
     private <T extends Item> List<T> mergeItems(List<T> dbItems, List<T> googleItems) {
+
         List<T> result = new ArrayList<>(30);
 
         for (T dbItem : dbItems) {
@@ -100,9 +96,10 @@ public class LoadItems implements Callable<List<GTaskList>> {
     }
 
     public List<GTaskList> getLists() {
-        List<GTaskList> tasksFromDB = itemsFromDB.loadLists();
+
+        List<GTaskList> tasksFromDB = database.loadLists();
         if (isSyncWithGTasksEnabled && isNetworkAvailable(context)) {
-            List<GTaskList> tasksFromGoogle = itemsFromGoogle.loadLists();
+            List<GTaskList> tasksFromGoogle = remoteServer.loadLists();
             if (!tasksFromGoogle.isEmpty())
                 reconcile(tasksFromDB, tasksFromGoogle);
             return mergeItems(tasksFromDB, tasksFromGoogle);
@@ -112,6 +109,7 @@ public class LoadItems implements Callable<List<GTaskList>> {
 
     @Override
     public List<GTaskList> call() {
+
         return getLists();
     }
 }

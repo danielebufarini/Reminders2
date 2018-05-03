@@ -6,7 +6,7 @@ import com.danielebufarini.reminders2.model.GTaskList;
 import java.io.IOException;
 import java.util.List;
 
-public interface LoadItemsFromResource {
+public interface Resource {
     List<GTask> loadTasks(GTaskList list) throws IOException;
     List<GTaskList> loadLists();
 }

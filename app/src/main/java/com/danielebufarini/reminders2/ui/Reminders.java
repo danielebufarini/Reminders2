@@ -52,7 +52,6 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
     public static final String PREF_SYNC_GOOGLE_ENABLED = "syncEnabled";
     public static final boolean LOGV = true;
 
-    private static final String NO_ACCOUNT_SETUP = "<no account set up>";
     private static final int SYNCHRONISE = 1;
     private static final int CHANGED_GOOGLE_ACCOUNT = 2;
     private static final int REQUEST_CODE_PICK_ACCOUNT = 3;
@@ -92,7 +91,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
         commands.put(CHANGED_GOOGLE_ACCOUNT, (requestCode, resultCode, data) -> {
             if (resultCode == Reminders.RESULT_OK) {
                 int position = data.getIntExtra("reminders_position", 0);
-                saveAuthorisation(accountHelper.getNames()[position]);
+                saveAuthorisation(CACHE.accountName());
                 CACHE.isSyncWithGTasksEnabled(true);
                     /*if (!selectedAccountName.equals(accountHelper[position].name))
                         switchAccount(position);*/
@@ -105,6 +104,14 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
         CACHE.setDatabase(Room.databaseBuilder(getApplicationContext(),
                 RemindersDatabase.class, RemindersDatabase.NAME).build());
         Stetho.initializeWithDefaults(this);
+    }
+
+    @Override
+    protected void onStop() {
+
+//        final boolean syncWithGoogle = isSyncWithGTasksEnabled && isNetworkAvailable();
+        new Thread(new SaveItems(this, true, CACHE.accountName(), CACHE.getFolders())).start();
+        super.onStop();
     }
 
     private String[] toArray(List<GTaskList> foldersList) {
@@ -166,14 +173,14 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
 
         SharedPreferences settings = getApplicationContext()
                 .getSharedPreferences(Reminders.class.getName(), Context.MODE_PRIVATE);
-        CACHE.accountName(settings.getString(PREF_ACCOUNT_NAME, accountHelper.getNames()[0]));
+        CACHE.accountName(settings.getString(PREF_ACCOUNT_NAME, CACHE.accountName()));
         accountName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
                 accountHelper.getNames()));
         accountName.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, final int position, long id) {
 
-                String account = accountHelper.getNames()[position];
+                String account = CACHE.accountName();
                 if (!CACHE.accountName().equals(account)) {
                     authorise(account,
                             CHANGED_GOOGLE_ACCOUNT,
@@ -274,7 +281,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
             //progressBar.setVisibility(View.VISIBLE);
         });
         AppCompatActivity activity = this;
-        AsyncHandler.post(() ->  {
+        AsyncHandler.post(() -> {
             if (areItemsToBeSaved)
                 new SaveItems(
                         activity,
@@ -288,7 +295,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
             List<String> folderNames = new ArrayList<>(taskLists.size());
             for (GTaskList folder : taskLists)
                 folderNames.add(folder.title);
-            final ArrayAdapter<String> adapter = new ArrayAdapter<>(
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
                     Reminders.this, android.R.layout.simple_spinner_item, folderNames
             );
             // Specify the layout to use when the list of choices appears
@@ -309,7 +316,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                            final IfAlreadyAuthorised ifAlreadyAuthorised, final ImageButton syncButton) {
 
         if (!isAccountAuthorised(accountName)) {
-            final Tasks googleService = GoogleService.getGoogleTasksService(this, accountName);
+            Tasks googleService = GoogleService.getGoogleTasksService(this, accountName);
             new Thread(() -> {
                 try {
                     googleService.tasklists().list().setMaxResults(1L).execute();
@@ -367,7 +374,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
         if (CACHE.accountName() == null)
             CACHE.accountName(accountName);
         if (CACHE.getFolders().isEmpty())
-            authorise(accountHelper.getNames()[accountHelper.getIndex(CACHE.accountName())],
+            authorise(accountName,
                     SYNCHRONISE,
                     () -> synchroniseAndUpdateUI(DONT_SAVE_TASKS),
                     null

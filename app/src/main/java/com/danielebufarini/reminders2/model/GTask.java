@@ -1,10 +1,9 @@
 package com.danielebufarini.reminders2.model;
 
-import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.Ignore;
-import android.database.sqlite.SQLiteDatabase;
+import android.arch.persistence.room.Index;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -18,6 +17,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -25,9 +25,10 @@ import static android.arch.persistence.room.ForeignKey.CASCADE;
 
 @Entity(tableName = "task",
         foreignKeys = @ForeignKey(entity = GTaskList.class,
-                                    parentColumns = "id",
-                                    childColumns = "list_id",
-                                    onDelete = CASCADE))
+                parentColumns = "id",
+                childColumns = "listId",
+                onDelete = CASCADE),
+        indices = @Index(value = "listId"))
 public class GTask extends Item implements Comparable<GTask>, Serializable {
     private static final long serialVersionUID = 987654321L;
 
@@ -46,30 +47,21 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     private static final String TASK_COMPLETED = "completed", NEEDS_ACTION = "needsAction";
     private static final String LOGTAG = GTask.class.getSimpleName();
 
-    public String category;
-    public String notes;
-    @ColumnInfo(name = "reminder_location_title")
-    public String locationTitle;
     @Ignore
     public long completed;
-    @ColumnInfo(name = "due_date")
+    public String category;
+    public String notes;
+    public String locationTitle;
     public long dueDate;
-    @ColumnInfo(name = "reminder_date")
     public long reminderDate;
-    @ColumnInfo(name = "reminder_interval")
     public long reminderInterval;
-    @ColumnInfo(name = "reminder_location_radius")
     public long radius;
-    @ColumnInfo(name = "reminder_location_lat")
     public double latitude;
-    @ColumnInfo(name = "reminder_location_lng")
     public double longitude;
     public int priority;
     public int level;
-    @Ignore
-    private GTaskList list;
-    @ColumnInfo(name = "list_id")
     private long listId;
+    private String listGoogleId;
 
     public GTask() {
 
@@ -80,25 +72,6 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public GTask(long id) {
 
         super(id);
-    }
-
-    @Ignore
-    public GTask(GTask that) {
-
-        super(that);
-        this.category = that.category;
-        this.notes = that.notes;
-        this.completed = that.completed;
-        this.dueDate = that.dueDate;
-        this.reminderDate = that.reminderDate;
-        this.reminderInterval = that.reminderInterval;
-        this.priority = that.priority;
-        this.level = that.level;
-        this.latitude = that.latitude;
-        this.longitude = that.longitude;
-        this.radius = that.radius;
-        this.locationTitle = that.locationTitle;
-        this.list = that.list;
     }
 
     @Override
@@ -115,24 +88,24 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     }
 
     @Override
-    public void insert(SQLiteDatabase db) {
+    public void insert() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().insert(this));
-        Log.d(LOGTAG, "db :: inserted task " + this + " in list " + list);
+        Log.d(LOGTAG, "db :: inserted task " + this + " in list id " + listId);
     }
 
     @Override
-    public void delete(SQLiteDatabase db) {
+    public void delete() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().delete(this));
-        Log.d(LOGTAG, "db :: deleted task " + this + " in list " + list);
+        Log.d(LOGTAG, "db :: deleted task " + this + " in list id " + listId);
     }
 
     @Override
-    public void merge(SQLiteDatabase db) {
+    public void merge() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().update(this));
-        Log.d(LOGTAG, "db :: updated task " + this + " in list " + list);
+        Log.d(LOGTAG, "db :: updated task " + this + " in list id " + listId);
     }
 
     private Task newTask() {
@@ -152,16 +125,16 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public void insert(Tasks googleService) throws IOException {
 
         Task task = newTask();
-        Task newTask = googleService.tasks().insert(list.googleId, task).execute();
+        Task newTask = googleService.tasks().insert(listGoogleId, task).execute();
         googleId = newTask.getId();
-        Log.d(LOGTAG, "google :: inserted task " + this + " in list " + list);
+        Log.d(LOGTAG, "google :: inserted task " + this + " in list " + listGoogleId);
     }
 
     @Override
     public void delete(Tasks googleService) throws IOException {
 
-        googleService.tasks().delete(list.googleId, googleId).execute();
-        Log.d(LOGTAG, "google :: deleted task " + this + " in list " + list);
+        googleService.tasks().delete(listGoogleId, googleId).execute();
+        Log.d(LOGTAG, "google :: deleted task " + this + " in list " + listGoogleId);
     }
 
     @Override
@@ -169,8 +142,8 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
         Task task = newTask();
         task.setId(googleId);
-        googleService.tasks().update(list.googleId, task.getId(), task).execute();
-        Log.d(LOGTAG, "google :: updated task " + this + " in list " + list);
+        googleService.tasks().update(listGoogleId, task.getId(), task).execute();
+        Log.d(LOGTAG, "google :: updated task " + this + " in list " + listGoogleId);
     }
 
     @Override
@@ -182,7 +155,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     @Override
     public List<? extends Item> getChildren() {
 
-        return EMPTY_LIST;
+        return Collections.emptyList();
     }
 
     @Override
@@ -220,17 +193,12 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         this.reminderInterval = interval;
     }
 
-    public GTaskList getList() {
-
-        return list;
-    }
-
     public void setList(GTaskList list) {
 
-        this.list = list;
         listId = list.id;
     }
 
+    @Override
     public long getListId() {
 
         return listId;
@@ -239,6 +207,16 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public void setListId(long listId) {
 
         this.listId = listId;
+    }
+
+    public String getListGoogleId() {
+
+        return listGoogleId;
+    }
+
+    public void setListGoogleId(String listGoogleId) {
+
+        this.listGoogleId = listGoogleId;
     }
 
     private String extractTagValue(final String source, final int index, final String tag) {

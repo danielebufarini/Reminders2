@@ -1,43 +1,34 @@
 package com.danielebufarini.reminders2.model;
 
-import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
-import android.database.sqlite.SQLiteDatabase;
 
 import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.google.api.services.tasks.Tasks;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 public abstract class Item implements Serializable {
+
+    private static transient final ApplicationCache CACHE = ApplicationCache.INSTANCE;
     private static final long serialVersionUID = 987654322L;
 
-    public static final List<Item> EMPTY_LIST = new ArrayList<Item>(0);
-    private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
-
-    @PrimaryKey(autoGenerate = true)
+    @PrimaryKey
     public long id;
-    @ColumnInfo(name = "updated_date")
     public long updated;
     public String title;
-    @ColumnInfo(name = "gtask_id")
     public String googleId;
-    @ColumnInfo(name = "account_name")
     public String accountName;
-    @ColumnInfo(name = "deleted")
     public boolean isDeleted;
-    @ColumnInfo(name = "merged")
     public boolean isMerged;
     @Ignore
-    public transient boolean isModified;
+    public boolean isModified;
     @Ignore
-    public transient boolean isStored;
+    public boolean isStored;
 
     public Item() {
 
@@ -47,18 +38,6 @@ public abstract class Item implements Serializable {
     public Item(long id) {
 
         this.id = id;
-    }
-
-    public Item(Item that) {
-
-        this.id = that.id;
-        this.updated = that.updated;
-        this.title = that.title;
-        this.googleId = that.googleId;
-        this.accountName = that.accountName;
-        this.isDeleted = that.isDeleted;
-        this.isMerged = that.isMerged;
-        this.isModified = that.isModified;
     }
 
     public static long generateId() {
@@ -83,11 +62,15 @@ public abstract class Item implements Serializable {
         return (int) (id ^ (id >>> 32));
     }
 
-    public abstract void insert(SQLiteDatabase db);
+    public abstract long getListId();
 
-    public abstract void delete(SQLiteDatabase db);
+    public abstract void setListId(long listId);
 
-    public abstract void merge(SQLiteDatabase db);
+    public abstract void insert();
+
+    public abstract void delete();
+
+    public abstract void merge();
 
     public abstract void insert(Tasks googleService) throws IOException;
 
