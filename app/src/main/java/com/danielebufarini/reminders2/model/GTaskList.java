@@ -20,7 +20,8 @@ public class GTaskList extends Item implements Serializable {
     private static transient final String LOGTAG = GTaskList.class.getSimpleName();
     private static final long serialVersionUID = 1234567890L;
 
-    public transient List<GTask> tasks;
+    @Ignore
+    public List<GTask> tasks;
     public boolean isHideCompleted = false;
     public boolean isSortedByDueDate = true;
 

@@ -24,7 +24,7 @@ public enum ApplicationCache {
     private GTask task;
     private RemindersDatabase database;
 
-    public List<GTaskList> getFolders() {
+    public List<GTaskList> getLists() {
 
         synchronized (listsLock) {
             return Collections.synchronizedList(folders);

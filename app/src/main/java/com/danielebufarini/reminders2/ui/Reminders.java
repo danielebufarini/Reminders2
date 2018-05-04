@@ -1,10 +1,13 @@
 package com.danielebufarini.reminders2.ui;
 
-import android.accounts.AccountManager;
 import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -21,7 +24,9 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.danielebufarini.reminders2.R;
 import com.danielebufarini.reminders2.database.RemindersDatabase;
@@ -34,11 +39,18 @@ import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.danielebufarini.reminders2.util.GoogleAccountHelper;
 import com.danielebufarini.reminders2.util.GoogleService;
 import com.facebook.stetho.Stetho;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.services.tasks.Tasks;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,40 +59,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Reminders extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
-    public static final int REFRESH_TASKS = 3;
+    public static final int REFRESH_TASKS = 4;
     public static final String PREF_ACCOUNT_NAME = "accountName";
     public static final String PREF_SYNC_GOOGLE_ENABLED = "syncEnabled";
     public static final boolean LOGV = true;
 
     private static final int SYNCHRONISE = 1;
     private static final int CHANGED_GOOGLE_ACCOUNT = 2;
-    private static final int REQUEST_CODE_PICK_ACCOUNT = 3;
+    private static final int RC_SIGN_IN = 3;
     private static final boolean DONT_SAVE_TASKS = false;
     private static final String LOGTAG = "Reminders";
     private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
 
-    private TaskFragment taskFragment;
     private volatile AtomicInteger progressBarCounter = new AtomicInteger();
     private GoogleAccountHelper accountHelper;
     private final Map<Integer, Command> commands = new ConcurrentHashMap<>(3);
-
-    // UI widgets
-    private Spinner folders;
+    Spinner lists;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Intent intent = AccountManager.newChooseAccountIntent(null, null, new String[]{"com.google"}, null, null, null, null);
-        startActivityForResult(intent, REQUEST_CODE_PICK_ACCOUNT);
         accountHelper = new GoogleAccountHelper(this);
-
         if (CACHE.isAtomicLongNull())
             CACHE.setAtomicLongValue(0L);
         if (CACHE.isSyncWithGTasksEnabled() == null)
             CACHE.isSyncWithGTasksEnabled(checkGooglePlayServicesAvailable());
-        taskFragment = (TaskFragment) getSupportFragmentManager().findFragmentById(R.id.tasksFragment);
+        CACHE.setDatabase(Room.databaseBuilder(getApplicationContext(),
+                RemindersDatabase.class, RemindersDatabase.NAME).build());
+        setupWidgets();
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
         commands.put(SYNCHRONISE, (requestCode, resultCode, data) -> {
             if (resultCode == Reminders.RESULT_OK) {
                 saveAuthorisation(CACHE.accountName());
@@ -93,32 +103,90 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                 int position = data.getIntExtra("reminders_position", 0);
                 saveAuthorisation(CACHE.accountName());
                 CACHE.isSyncWithGTasksEnabled(true);
-                    /*if (!selectedAccountName.equals(accountHelper[position].name))
-                        switchAccount(position);*/
             }
         });
-        commands.put(REQUEST_CODE_PICK_ACCOUNT, (requestCode, resultCode, data) -> {
-            setUpCache(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
-            setupWidgets();
+        commands.put(RC_SIGN_IN, (requestCode, resultCode, data) -> {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            try {
+                GoogleSignInAccount account = task.getResult(ApiException.class);
+                setupProfileWidgets(account, navigationView);
+            } catch (ApiException e) {
+                CACHE.isSyncWithGTasksEnabled(false);
+            }
         });
-        CACHE.setDatabase(Room.databaseBuilder(getApplicationContext(),
-                RemindersDatabase.class, RemindersDatabase.NAME).build());
+        if (CACHE.isSyncWithGTasksEnabled()) {
+            setupGoogleAccount(navigationView);
+        }
         Stetho.initializeWithDefaults(this);
+    }
+
+    private void setupGoogleAccount(NavigationView navigationView) {
+
+        GoogleSignInOptions googleSignInOptions =
+                new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestEmail().requestProfile()
+                        .build();
+        GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(this, googleSignInOptions);
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        if (account == null) {
+            Intent signInIntent = googleSignInClient.getSignInIntent();
+            startActivityForResult(signInIntent, RC_SIGN_IN);
+        } else {
+            setupProfileWidgets(account, navigationView.getHeaderView(0));
+        }
+    }
+
+    private void setupProfileWidgets(GoogleSignInAccount account, View header) {
+
+        String name = account.getAccount().name;
+        authoriseGoogleAccount(name);
+        TextView accountName = header.findViewById(R.id.account_name);
+        accountName.setText(name);
+        ImageView photo = header.findViewById(R.id.profile_image);
+        loadProfileImage(photo, account);
     }
 
     @Override
     protected void onStop() {
 
 //        final boolean syncWithGoogle = isSyncWithGTasksEnabled && isNetworkAvailable();
-        new Thread(new SaveItems(this, true, CACHE.accountName(), CACHE.getFolders())).start();
+        new Thread(new SaveItems(this, true, CACHE.accountName(), CACHE.getLists())).start();
         super.onStop();
     }
 
-    private String[] toArray(List<GTaskList> foldersList) {
+    private static class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        private ImageView image;
 
-        String[] folders = new String[foldersList.size()];
-        for (int i = 0; i < foldersList.size(); ++i)
-            folders[i] = foldersList.get(i).title;
+        public DownloadImageTask(ImageView image) {
+
+            this.image = image;
+        }
+
+        protected Bitmap doInBackground(String... urls) {
+
+            String urldisplay = urls[0];
+            Bitmap icon = null;
+            try {
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                icon = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+                Log.e("Error", e.getMessage());
+            }
+            return icon;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+
+            image.setImageBitmap(result);
+        }
+    }
+
+    private String[] toArray(List<GTaskList> lists) {
+
+        String[] folders = new String[lists.size()];
+        for (int i = 0, j = lists.size(); i < j; ++i) {
+            folders[i] = lists.get(i).title;
+        }
         return folders;
     }
 
@@ -126,31 +194,25 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
             Intent insertNewTask = new Intent(Reminders.this, ManageTaskActivity.class);
             startActivity(insertNewTask);
         });
-
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
-
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-
-        folders = findViewById(R.id.folders);
-        folders.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
-                toArray(CACHE.getFolders())));
-        folders.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        lists = findViewById(R.id.folders);
+        lists.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
+                toArray(CACHE.getLists())));
+        lists.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
                 CACHE.setActiveFolder(position);
-                final GTaskList taskList = CACHE.getFolders().get(position);
+                final GTaskList taskList = CACHE.getLists().get(position);
                 /*if (taskList.tasks == null)
                     new Thread(new Runnable() {
                         public void run() {
@@ -159,6 +221,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                             taskList.tasks = loadItems.getTasks(taskList.id);
                         }
                 };*/
+                TaskFragment taskFragment = (TaskFragment) getSupportFragmentManager().findFragmentById(R.id.tasksFragment);
                 taskFragment.onFolderSelected(taskList.tasks);
             }
 
@@ -167,34 +230,13 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
 
             }
         });
+    }
 
-        View header = navigationView.getHeaderView(0);
-        Spinner accountName = header.findViewById(R.id.account_name);
+    private void loadProfileImage(ImageView image, GoogleSignInAccount account) {
 
-        SharedPreferences settings = getApplicationContext()
-                .getSharedPreferences(Reminders.class.getName(), Context.MODE_PRIVATE);
-        CACHE.accountName(settings.getString(PREF_ACCOUNT_NAME, CACHE.accountName()));
-        accountName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
-                accountHelper.getNames()));
-        accountName.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, final int position, long id) {
-
-                String account = CACHE.accountName();
-                if (!CACHE.accountName().equals(account)) {
-                    authorise(account,
-                            CHANGED_GOOGLE_ACCOUNT,
-                            () -> synchroniseAndUpdateUI(true), null /*syncButton*/);
-                    CACHE.accountName(account);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-        accountName.setSelection(accountHelper.getIndex(CACHE.accountName()));
+        Uri uri = account.getPhotoUrl();
+        assert uri != null;
+        new DownloadImageTask(image).execute(uri.toString());
     }
 
     @Override
@@ -289,19 +331,20 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                         CACHE.accountName(),
                         new ArrayList<>()
                 ).run();
-            LoadItems loadItems = new LoadItems(activity, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
+            LoadItems loadItems = new LoadItems(activity, CACHE.isSyncWithGTasksEnabled(),
+                    CACHE.accountName());
             List<GTaskList> taskLists = loadItems.getLists();
             CACHE.setFolders(taskLists);
             List<String> folderNames = new ArrayList<>(taskLists.size());
-            for (GTaskList folder : taskLists)
-                folderNames.add(folder.title);
+            for (GTaskList list : taskLists) {
+                folderNames.add(list.title);
+            }
             ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                    Reminders.this, android.R.layout.simple_spinner_item, folderNames
-            );
+                    Reminders.this, android.R.layout.simple_spinner_item, folderNames);
             // Specify the layout to use when the list of choices appears
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             activity.runOnUiThread(() -> {
-                folders.setAdapter(adapter);
+                lists.setAdapter(adapter);
                 if (progressBarCounter.decrementAndGet() == 0)
                     ;//progressBar.setVisibility(View.GONE);
             });
@@ -369,11 +412,10 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
             command.execute(requestCode, resultCode, data);
     }
 
-    private void setUpCache(String accountName) {
+    private void authoriseGoogleAccount(String accountName) {
 
-        if (CACHE.accountName() == null)
-            CACHE.accountName(accountName);
-        if (CACHE.getFolders().isEmpty())
+        CACHE.accountName(accountName);
+        if (CACHE.getLists().isEmpty())
             authorise(accountName,
                     SYNCHRONISE,
                     () -> synchroniseAndUpdateUI(DONT_SAVE_TASKS),
