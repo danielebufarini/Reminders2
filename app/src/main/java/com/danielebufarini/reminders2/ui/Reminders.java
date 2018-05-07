@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -25,6 +27,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -140,6 +143,8 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
 
         String name = account.getAccount().name;
         authoriseGoogleAccount(name);
+        TextView userName = header.findViewById(R.id.user_name);
+        userName.setText(account.getDisplayName());
         TextView accountName = header.findViewById(R.id.account_name);
         accountName.setText(name);
         ImageView photo = header.findViewById(R.id.profile_image);
@@ -204,32 +209,6 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
-        lists = findViewById(R.id.folders);
-        lists.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
-                toArray(CACHE.getLists())));
-        lists.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
-                CACHE.setActiveFolder(position);
-                final GTaskList taskList = CACHE.getLists().get(position);
-                /*if (taskList.tasks == null)
-                    new Thread(new Runnable() {
-                        public void run() {
-                            LoadItems loadItems = new LoadItems(
-                                    Reminders.this, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
-                            taskList.tasks = loadItems.getTasks(taskList.id);
-                        }
-                };*/
-                TaskFragment taskFragment = (TaskFragment) getSupportFragmentManager().findFragmentById(R.id.tasksFragment);
-                taskFragment.onFolderSelected(taskList.tasks);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
     }
 
     private void loadProfileImage(ImageView image, GoogleSignInAccount account) {
@@ -344,11 +323,54 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
             // Specify the layout to use when the list of choices appears
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             activity.runOnUiThread(() -> {
-                lists.setAdapter(adapter);
-                if (progressBarCounter.decrementAndGet() == 0)
+                if (progressBarCounter.decrementAndGet() == 0) {
                     ;//progressBar.setVisibility(View.GONE);
+                    showTaskFragment();
+                    lists.setAdapter(adapter);
+                }
             });
         });
+    }
+
+    private void showTaskFragment() {
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        TaskFragment fragment = (TaskFragment) fragmentManager.findFragmentById(R.id.main);
+        if (fragment == null) {
+            TaskFragment taskFragment = new TaskFragment();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.waiting, taskFragment);
+            transaction.commit();
+            ProgressBar progressBar = findViewById(R.id.waitingProgressBar);
+            progressBar.setVisibility(View.GONE);
+            lists = findViewById(R.id.lists);
+            lists.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
+                    toArray(CACHE.getLists())));
+            lists.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                    CACHE.setActiveFolder(position);
+                    final GTaskList taskList = CACHE.getLists().get(position);
+                /*if (taskList.tasks == null)
+                    new Thread(new Runnable() {
+                        public void run() {
+                            LoadItems loadItems = new LoadItems(
+                                    Reminders.this, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
+                            taskList.tasks = loadItems.getTasks(taskList.id);
+                        }
+                };*/
+                    taskFragment.onFolderSelected(taskList.tasks);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+
+                }
+            });
+            FloatingActionButton floatingActionButton = findViewById(R.id.fab);
+            floatingActionButton.setVisibility(View.VISIBLE);
+        }
     }
 
     private interface IfAlreadyAuthorised {
