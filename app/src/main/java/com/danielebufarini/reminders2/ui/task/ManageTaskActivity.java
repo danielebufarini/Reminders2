@@ -68,7 +68,7 @@ public class ManageTaskActivity extends AppCompatActivity
         if (task != null) {
             updateWidgets(task);
         } else {
-            task = createEmptyTask();
+            task = newEmptyTask();
         }
 
         CACHE.setTask(task);
@@ -136,7 +136,7 @@ public class ManageTaskActivity extends AppCompatActivity
         if (!notes.getText().toString().equals(task.notes)) return true;
         if (reminderDate != null && task.reminderDate != reminderDate.getTimeInMillis())
             return true;
-        if (task.dueDate != dueDate.getTimeInMillis()) return true;
+        if (isEditingExistingTask && task.dueDate != dueDate.getTimeInMillis()) return true;
         if (task.priority != translatePriorityPosition(priority.getSelectedItemPosition()))
             return true;
         if (Double.compare(task.latitude, latitude) != 0) return true;
@@ -259,14 +259,14 @@ public class ManageTaskActivity extends AppCompatActivity
 
     private static final String EMPTY_STRING = "";
 
-    private GTask createEmptyTask() {
+    private GTask newEmptyTask() {
 
         GTask task = new GTask();
         task.title = "";
         task.googleId = "";
         task.accountName = CACHE.accountName();
         task.notes = EMPTY_STRING;
-        task.priority = 0;
+        task.priority = Priority.NONE.getPriority();
         task.level = 0;
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;
