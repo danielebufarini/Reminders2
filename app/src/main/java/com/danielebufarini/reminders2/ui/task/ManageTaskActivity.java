@@ -267,7 +267,7 @@ public class ManageTaskActivity extends AppCompatActivity
         task.accountName = CACHE.accountName();
         task.notes = EMPTY_STRING;
         task.priority = Priority.NONE.getPriority();
-        task.level = 0;
+        task.parentId = "";
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;
         task.setListId(CACHE.getLists().get(CACHE.getActiveFolder()).id);

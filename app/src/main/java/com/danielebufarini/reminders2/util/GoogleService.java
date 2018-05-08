@@ -26,44 +26,31 @@ public class GoogleService {
     }
 
     public static Tasks getGoogleTasksService(final Context context, String accountName) {
-        /*final GoogleAccountCredential credential =
-                GoogleAccountCredential.usingOAuth2(context, TASKS_SCOPES);
-        credential.setSelectedAccountName(accountName);
 
-        HttpTransport transport = AndroidHttp.newCompatibleTransport();
-        JsonFactory jsonFactory = new GsonFactory();
-        Tasks googleService =
-                new Tasks.Builder(transport, jsonFactory, credential)
-                        .setApplicationName(getAppName(context))
-                        .setHttpRequestInitializer(new HttpRequestInitializer() {
-                            @Override
-                            public void initialize(HttpRequest httpRequest) {
-                                credential.initialize(httpRequest);
-                                httpRequest.setConnectTimeout(3 * 1000);  // 3 seconds connect timeout
-                                httpRequest.setReadTimeout(3 * 1000);  // 3 seconds read timeout
-                            }
-                        })
-                        .build();*/
         final GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(
                 context, TASKS_SCOPES)
                 .setBackOff(new ExponentialBackOff())
                 .setSelectedAccountName(accountName);
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-        Tasks googleService = new com.google.api.services.tasks.Tasks.Builder(
-                transport, jsonFactory, credential)
-                .setApplicationName("Reminders2")
+        return new Tasks.Builder(transport, jsonFactory, credential)
+                .setApplicationName(getAppName(context))
+                .setHttpRequestInitializer(request -> {
+                    credential.initialize(request);
+                    request.setConnectTimeout(3 * 1000);  // 3 seconds connect timeout
+                    request.setReadTimeout(3 * 1000);  // 3 seconds read timeout
+                })
                 .build();
-        return googleService;
     }
 
-    public static String getAppName(Context context) {
-        String appName = context.getResources().getString(R.string.app_name)
+    private static String getAppName(Context context) {
+
+        return context.getResources().getString(R.string.app_name)
                 + "/" + context.getResources().getString(R.string.app_version);
-        return appName;
     }
 
     public static boolean isNetworkAvailable(Context context) {
+
         ConnectivityManager connectivityManager
                 = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();

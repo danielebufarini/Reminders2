@@ -59,7 +59,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public double latitude;
     public double longitude;
     public int priority;
-    public int level;
+    public String parentId;
     private long listId;
     private String listGoogleId;
 

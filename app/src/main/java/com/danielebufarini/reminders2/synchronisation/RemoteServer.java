@@ -40,6 +40,7 @@ public class RemoteServer implements Resource {
                 gtask.completed = task.getCompleted() != null ? task.getCompleted().getValue() : 0;
                 gtask.dueDate = task.getDue() != null ? task.getDue().getValue() : 0;
                 gtask.isDeleted = task.getDeleted() != null ? task.getDeleted() : false;
+                gtask.parentId = task.getParent() != null ? task.getParent() : "";
                 gtask.setListId(list.id);
                 gtask.setListGoogleId(list.googleId);
                 gtask.accountName = accountName;

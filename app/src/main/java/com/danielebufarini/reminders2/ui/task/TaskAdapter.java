@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.support.annotation.NonNull;
 import android.text.util.Linkify;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,8 +46,9 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
         this.context = context;
     }
 
+    @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
 
         ViewHolder taskViewHolder;
         if (convertView == null) {

@@ -13,7 +13,6 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -296,11 +295,8 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
     }
 
     private void synchroniseAndUpdateUI(final boolean areItemsToBeSaved) {
-        //final View progressBar = this.findViewById(R.id.title_refresh_progress);
-        runOnUiThread(() -> {
-            progressBarCounter.incrementAndGet();
-            //progressBar.setVisibility(View.VISIBLE);
-        });
+
+        progressBarCounter.incrementAndGet();
         AppCompatActivity activity = this;
         AsyncHandler.post(() -> {
             if (areItemsToBeSaved)
@@ -322,13 +318,12 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                     Reminders.this, android.R.layout.simple_spinner_item, folderNames);
             // Specify the layout to use when the list of choices appears
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            activity.runOnUiThread(() -> {
-                if (progressBarCounter.decrementAndGet() == 0) {
-                    ;//progressBar.setVisibility(View.GONE);
+            if (progressBarCounter.decrementAndGet() == 0) {
+                activity.runOnUiThread(() -> {
                     showTaskFragment();
                     lists.setAdapter(adapter);
-                }
-            });
+                });
+            }
         });
     }
 
@@ -338,9 +333,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
         TaskFragment fragment = (TaskFragment) fragmentManager.findFragmentById(R.id.main);
         if (fragment == null) {
             TaskFragment taskFragment = new TaskFragment();
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.replace(R.id.waiting, taskFragment);
-            transaction.commit();
+            fragmentManager.beginTransaction().replace(R.id.waiting, taskFragment).commit();
             ProgressBar progressBar = findViewById(R.id.waitingProgressBar);
             progressBar.setVisibility(View.GONE);
             lists = findViewById(R.id.lists);
@@ -351,15 +344,15 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
                     CACHE.setActiveFolder(position);
-                    final GTaskList taskList = CACHE.getLists().get(position);
-                /*if (taskList.tasks == null)
-                    new Thread(new Runnable() {
-                        public void run() {
-                            LoadItems loadItems = new LoadItems(
-                                    Reminders.this, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
-                            taskList.tasks = loadItems.getTasks(taskList.id);
-                        }
-                };*/
+                    GTaskList taskList = CACHE.getLists().get(position);
+                    /*if (taskList.tasks == null)
+                        new Thread(new Runnable() {
+                            public void run() {
+                                LoadItems loadItems = new LoadItems(
+                                        Reminders.this, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
+                                taskList.tasks = loadItems.getTasks(taskList.id);
+                            }
+                    };*/
                     taskFragment.onFolderSelected(taskList.tasks);
                 }
 
