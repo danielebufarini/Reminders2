@@ -16,8 +16,8 @@ public class DragGripView extends View {
 
     private static final int HORIZ_RIDGES = 2;
 
-    private int mGravity = Gravity.START;
-    private int mColor = 0x33333333;
+    private int gravity = Gravity.START;
+    private int color = 0x33333333;
 
     private Paint mRidgePaint;
 
@@ -36,23 +36,22 @@ public class DragGripView extends View {
     }
 
     public DragGripView(Context context, AttributeSet attrs, int defStyle) {
+
         super(context, attrs, defStyle);
-
         final TypedArray a = context.obtainStyledAttributes(attrs, ATTRS);
-        mGravity = a.getInteger(0, mGravity);
-        mColor = a.getColor(1, mColor);
+        gravity = a.getInteger(0, gravity);
+        color = a.getColor(1, color);
         a.recycle();
-
         final Resources res = getResources();
         mRidgeSize = res.getDimensionPixelSize(R.dimen.drag_grip_ridge_size);
         mRidgeGap = res.getDimensionPixelSize(R.dimen.drag_grip_ridge_gap);
-
         mRidgePaint = new Paint();
-        mRidgePaint.setColor(mColor);
+        mRidgePaint.setColor(color);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+
         setMeasuredDimension(View.resolveSize((int) (HORIZ_RIDGES * (mRidgeSize + mRidgeGap) - mRidgeGap) + getPaddingLeft()
                 + getPaddingRight(), widthMeasureSpec), View.resolveSize((int) mRidgeSize, heightMeasureSpec));
     }
@@ -62,8 +61,7 @@ public class DragGripView extends View {
 
         float drawWidth = HORIZ_RIDGES * (mRidgeSize + mRidgeGap) - mRidgeGap;
         float drawLeft;
-
-        switch (Gravity.getAbsoluteGravity(mGravity, LAYOUT_DIRECTION_LTR) & Gravity.HORIZONTAL_GRAVITY_MASK) {
+        switch (Gravity.getAbsoluteGravity(gravity, LAYOUT_DIRECTION_LTR) & Gravity.HORIZONTAL_GRAVITY_MASK) {
             case Gravity.CENTER_HORIZONTAL:
                 drawLeft = getPaddingLeft() + ((mWidth - getPaddingLeft() - getPaddingRight()) - drawWidth) / 2;
                 break;
@@ -73,11 +71,9 @@ public class DragGripView extends View {
             default:
                 drawLeft = getPaddingLeft();
         }
-
         int vertRidges = (int) ((mHeight - getPaddingTop() - getPaddingBottom() + mRidgeGap) / (mRidgeSize + mRidgeGap));
         float drawHeight = vertRidges * (mRidgeSize + mRidgeGap) - mRidgeGap;
         float drawTop = getPaddingTop() + ((mHeight - getPaddingTop() - getPaddingBottom()) - drawHeight) / 2;
-
         for (int y = 0; y < vertRidges; y++) {
             for (int x = 0; x < HORIZ_RIDGES; x++) {
                 canvas.drawRect(drawLeft + x * (mRidgeSize + mRidgeGap), drawTop + y * (mRidgeSize + mRidgeGap), drawLeft + x
@@ -89,6 +85,7 @@ public class DragGripView extends View {
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+
         super.onSizeChanged(w, h, oldw, oldh);
         mHeight = h;
         mWidth = w;

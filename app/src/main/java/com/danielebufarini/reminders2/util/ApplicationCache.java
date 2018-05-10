@@ -58,7 +58,7 @@ public enum ApplicationCache {
         return value.getAndIncrement();
     }
 
-    public int getActiveFolder() {
+    public int getActiveList() {
 
         return activeFolder;
     }

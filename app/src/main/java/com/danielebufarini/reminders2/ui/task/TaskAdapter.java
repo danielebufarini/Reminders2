@@ -30,6 +30,8 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
     private Context context;
 
     private static class ViewHolder {
+        View divider;
+        TextView padding;
         TextView title;
         CheckBox completed;
         TextView dueDate;
@@ -57,6 +59,8 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
             li.inflate(R.layout.task, rowView, true);
             rowView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
             taskViewHolder = new ViewHolder();
+            taskViewHolder.divider = rowView.findViewById(R.id.divider);
+            taskViewHolder.padding = rowView.findViewById(R.id.padding);
             taskViewHolder.title = rowView.findViewById(R.id.item);
             taskViewHolder.completed = rowView.findViewById(R.id.item_check);
             taskViewHolder.dueDate = rowView.findViewById(R.id.dueDate);
@@ -67,12 +71,16 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
             //taskViewHolder.noHandle = (DragGripView) rowView.findViewById(R.id.no_handle);
             convertView = rowView;
             convertView.setTag(taskViewHolder);
-        } else
+        } else {
             taskViewHolder = (ViewHolder) convertView.getTag();
+        }
         final GTask task = getItem(position);
+        taskViewHolder.divider.setVisibility(position == 0 ? View.GONE : View.VISIBLE);
         if (task.reminderDate < System.currentTimeMillis() && task.reminderInterval == 0)
             task.reminderDate = 0;
         boolean isChecked = task.completed > 0;
+        taskViewHolder.padding.setVisibility(
+                (task.parentId != null && !task.parentId.isEmpty()) ? View.VISIBLE : View.GONE);
         taskViewHolder.title.setText(task.title);
         Linkify.addLinks(taskViewHolder.title, Linkify.ALL);
         if (isChecked)
@@ -113,8 +121,9 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
             taskViewHolder.priority.setTextSize(14.0F);
             taskViewHolder.priority.setTypeface(null, Typeface.BOLD_ITALIC);
             taskViewHolder.priority.setPadding(8, 40, 8, 8);
-        } else
+        } else {
             taskViewHolder.priority.setVisibility(View.GONE);
+        }
         //taskViewHolder.handle.setVisibility(task.list.isSortedByDueDate ? View.GONE : View.VISIBLE);
         //taskViewHolder.noHandle.setVisibility(task.list.isSortedByDueDate ? View.VISIBLE : View.GONE);
         return convertView;

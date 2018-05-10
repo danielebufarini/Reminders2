@@ -7,6 +7,7 @@ import android.arch.persistence.room.Index;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.danielebufarini.reminders2.database.TaskDao;
 import com.danielebufarini.reminders2.services.AsyncHandler;
 import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.google.api.client.util.DateTime;
@@ -17,7 +18,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -62,6 +63,8 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public String parentId;
     private long listId;
     private String listGoogleId;
+    @Ignore
+    private List<GTask> subtasks;
 
     public GTask() {
 
@@ -72,6 +75,11 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public GTask(long id) {
 
         super(id);
+    }
+
+    public String getGoogleId() {
+
+        return googleId;
     }
 
     @Override
@@ -90,14 +98,30 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     @Override
     public void insert() {
 
-        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().insert(this));
+        AsyncHandler.post(() -> {
+            TaskDao dao = ApplicationCache.INSTANCE.getDatabase().taskDao();
+            dao.insert(this);
+            isStored = true;
+            if (hasChildren()) {
+                getChildren().forEach(item -> {
+                    dao.insert((GTask) item);
+                    item.isStored = true;
+                });
+            }
+        });
         Log.d(LOGTAG, "db :: inserted task " + this + " in list id " + listId);
     }
 
     @Override
     public void delete() {
 
-        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().delete(this));
+        AsyncHandler.post(() -> {
+            TaskDao dao = ApplicationCache.INSTANCE.getDatabase().taskDao();
+            dao.delete(this);
+            if (hasChildren()) {
+                getChildren().forEach(item -> dao.insert((GTask) item));
+            }
+        });
         Log.d(LOGTAG, "db :: deleted task " + this + " in list id " + listId);
     }
 
@@ -149,18 +173,20 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     @Override
     public boolean hasChildren() {
 
-        return false;
+        return subtasks == null || !subtasks.isEmpty();
     }
 
     @Override
-    public List<? extends Item> getChildren() {
+    public <T extends Item> List<T> getChildren() {
 
-        return Collections.emptyList();
+        if (subtasks == null) subtasks = new ArrayList<>(10);
+        return (List<T>) subtasks;
     }
 
     @Override
     public <T extends Item> void setChildren(List<T> items) {
-        // Do nothing
+
+        subtasks = (List<GTask>) items;
     }
 
     @Override

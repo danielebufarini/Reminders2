@@ -58,6 +58,7 @@ public class GTaskList extends Item implements Serializable {
     public void insert() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().insert(this));
+        isStored = true;
         Log.d(LOGTAG, "db :: inserted list " + this);
     }
 
@@ -88,14 +89,14 @@ public class GTaskList extends Item implements Serializable {
 
         TaskList taskList = googleService.tasklists().insert(newTaskList()).execute();
         googleId = taskList.getId();
-        Log.d(LOGTAG, "google :: inserted list " + this);
+        Log.d(LOGTAG, "google :: inserted list id " + id);
     }
 
     @Override
     public void delete(Tasks googleService) throws IOException {
 
         googleService.tasklists().delete(googleId).execute();
-        Log.d(LOGTAG, "google :: deleted list " + this);
+        Log.d(LOGTAG, "google :: deleted list id " + id);
     }
 
     @Override
@@ -104,7 +105,7 @@ public class GTaskList extends Item implements Serializable {
         TaskList taskList = newTaskList();
         taskList.setId(googleId);
         googleService.tasklists().update(googleId, taskList).execute();
-        Log.d(LOGTAG, "google :: updated list " + this);
+        Log.d(LOGTAG, "google :: updated list id " + id);
     }
 
     @Override
@@ -114,9 +115,9 @@ public class GTaskList extends Item implements Serializable {
     }
 
     @Override
-    public List<? extends Item> getChildren() {
+    public <T extends Item> List<T> getChildren() {
 
-        return tasks;
+        return (List<T>) tasks;
     }
 
     @Override

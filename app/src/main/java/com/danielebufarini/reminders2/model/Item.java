@@ -40,7 +40,7 @@ public abstract class Item implements Serializable {
         this.id = id;
     }
 
-    public static long generateId() {
+    private static long generateId() {
 
         return CACHE.getNextLong();
     }

@@ -344,16 +344,16 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
                     CACHE.setActiveFolder(position);
-                    GTaskList taskList = CACHE.getLists().get(position);
-                    /*if (taskList.tasks == null)
+                    GTaskList list = CACHE.getLists().get(position);
+                    /*if (list.tasks == null)
                         new Thread(new Runnable() {
                             public void run() {
                                 LoadItems loadItems = new LoadItems(
                                         Reminders.this, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
-                                taskList.tasks = loadItems.getTasks(taskList.id);
+                                list.tasks = loadItems.getTasks(list.id);
                             }
                     };*/
-                    taskFragment.onFolderSelected(taskList.tasks);
+                    taskFragment.onFolderSelected(list.tasks);
                 }
 
                 @Override
@@ -367,6 +367,7 @@ public class Reminders extends AppCompatActivity implements NavigationView.OnNav
     }
 
     private interface IfAlreadyAuthorised {
+
         void doAction();
     }
 

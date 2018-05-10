@@ -104,8 +104,21 @@ public class TaskFragment extends Fragment implements Serializable {
     public void onFolderSelected(List<GTask> tasks) {
 
         adapter.clear();
-        if (tasks != null)
-            adapter.addAll(tasks);
+        if (tasks != null) {
+            adapter.addAll(flattenTasks(tasks));
+        }
+    }
+
+    private List<GTask> flattenTasks(List<GTask> tasks) {
+
+        List<GTask> result = new ArrayList<>(tasks.size() + 20);
+        for (GTask task : tasks) {
+            result.add(task);
+            if (task.hasChildren()) {
+                result.addAll(task.getChildren());
+            }
+        }
+        return result;
     }
 
     public void onRefreshTasksList(GTask task, int position) {

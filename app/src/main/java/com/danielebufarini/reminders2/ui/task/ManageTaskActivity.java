@@ -148,8 +148,7 @@ public class ManageTaskActivity extends AppCompatActivity
 
     private void updateModel() {
 
-        List<GTask> tasks =
-                (List<GTask>) CACHE.getLists().get(CACHE.getActiveFolder()).getChildren();
+        List<GTask> tasks = CACHE.getLists().get(CACHE.getActiveList()).getChildren();
         int taskIndex = tasks.indexOf(task);
         if (taskIndex > 0) {
             tasks.remove(tasks.get(taskIndex));
@@ -267,10 +266,9 @@ public class ManageTaskActivity extends AppCompatActivity
         task.accountName = CACHE.accountName();
         task.notes = EMPTY_STRING;
         task.priority = Priority.NONE.getPriority();
-        task.parentId = "";
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;
-        task.setListId(CACHE.getLists().get(CACHE.getActiveFolder()).id);
+        task.setListId(CACHE.getLists().get(CACHE.getActiveList()).id);
         return task;
     }
 

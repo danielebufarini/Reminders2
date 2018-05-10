@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.GTaskList;
+import com.danielebufarini.reminders2.ui.Reminders;
 import com.danielebufarini.reminders2.util.GoogleService;
 import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.model.TaskList;
@@ -12,7 +13,9 @@ import com.google.api.services.tasks.model.TaskLists;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RemoteServer implements Resource {
     public static final String LOGTAG = RemoteServer.class.getSimpleName();
@@ -28,9 +31,10 @@ public class RemoteServer implements Resource {
     @Override
     public List<GTask> loadTasks(GTaskList list) throws IOException {
 
-        List<GTask> gtasks = new ArrayList<>(20);
+        List<GTask> subtasks = new ArrayList<>(20);
+        Map<String, GTask> gtasks = new HashMap<>(20);
         com.google.api.services.tasks.model.Tasks tasks = googleService.tasks().list(list.googleId).execute();
-        if (tasks.getItems() != null)
+        if (tasks.getItems() != null) {
             for (com.google.api.services.tasks.model.Task task : tasks.getItems()) {
                 GTask gtask = new GTask();
                 gtask.googleId = task.getId();
@@ -40,14 +44,31 @@ public class RemoteServer implements Resource {
                 gtask.completed = task.getCompleted() != null ? task.getCompleted().getValue() : 0;
                 gtask.dueDate = task.getDue() != null ? task.getDue().getValue() : 0;
                 gtask.isDeleted = task.getDeleted() != null ? task.getDeleted() : false;
-                gtask.parentId = task.getParent() != null ? task.getParent() : "";
+                gtask.parentId = task.getParent();
                 gtask.setListId(list.id);
                 gtask.setListGoogleId(list.googleId);
                 gtask.accountName = accountName;
-                gtasks.add(gtask);
-                Log.d(LOGTAG, "google :: downloaded task " + gtask + " for list " + list);
+                if (gtask.parentId == null || gtask.parentId.isEmpty()) {
+                    gtasks.put(gtask.googleId, gtask);
+                } else {
+                    subtasks.add(gtask);
+                }
+                if (Reminders.LOGV)
+                    Log.d(LOGTAG, "google :: downloaded task " + gtask + " for list " + list);
             }
-        return gtasks;
+        }
+        insertSubtasksInList(gtasks, subtasks);
+        return new ArrayList<>(gtasks.values());
+    }
+
+    private void insertSubtasksInList(Map<String, GTask> tasks, List<GTask> subtasks) {
+
+        subtasks.forEach(subtask -> {
+            GTask task = tasks.get(subtask.parentId);
+            if (task != null) {
+                task.getChildren().add(subtask);
+            }
+        });
     }
 
     @Override
@@ -65,7 +86,7 @@ public class RemoteServer implements Resource {
                     list.accountName = accountName;
                     list.tasks = loadTasks(list);
                     googleItems.add(list);
-                    Log.d(LOGTAG, "google :: downloaded list " + list);
+                    if (Reminders.LOGV) Log.d(LOGTAG, "google :: downloaded list " + list);
                 } catch (Exception e) {
                     Log.e(LOGTAG, "google :: cannot retrive task from google servers for account +\""
                             + accountName + "\"", e);
@@ -76,7 +97,7 @@ public class RemoteServer implements Resource {
             Log.e(LOGTAG, "google :: cannot retrive lists from google servers for account \""
                     + accountName + "\"", e);
         }
-        Log.d(LOGTAG, "google :: loaded '" + googleItems.size() + "' items.");
+        if (Reminders.LOGV) Log.d(LOGTAG, "google :: loaded '" + googleItems.size() + "' items.");
         return googleItems;
     }
 }
