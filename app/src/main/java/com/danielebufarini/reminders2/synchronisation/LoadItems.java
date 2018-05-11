@@ -1,22 +1,23 @@
+
 package com.danielebufarini.reminders2.synchronisation;
 
-import android.content.Context;
-
-import com.danielebufarini.reminders2.model.GTaskList;
-import com.danielebufarini.reminders2.model.Item;
+import static com.danielebufarini.reminders2.util.GoogleService.isNetworkAvailable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static com.danielebufarini.reminders2.util.GoogleService.isNetworkAvailable;
+import com.danielebufarini.reminders2.model.GTaskList;
+import com.danielebufarini.reminders2.model.Item;
 
+import android.content.Context;
 
 public class LoadItems implements Callable<List<GTaskList>> {
-    private final boolean isSyncWithGTasksEnabled;
-    private final Context context;
+
+    private final boolean       isSyncWithGTasksEnabled;
+    private final Context       context;
     private final LocalDatabase localDatabase;
-    private final RemoteServer remoteServer;
+    private final RemoteServer  remoteServer;
 
     public LoadItems(Context context, boolean isSyncWithGTasksEnabled, String accountName) {
 
@@ -35,16 +36,19 @@ public class LoadItems implements Callable<List<GTaskList>> {
                 dbItems.add(item);
             }
         } else {
-            for (T dbItem : dbItems)
-                for (T googleItem : googleItems)
+            for (T dbItem : dbItems) {
+                for (T googleItem : googleItems) {
                     if (dbItem.googleId.equals(googleItem.googleId)) {
                         googleItem.id = dbItem.id;
                         googleItem.setListId(dbItem.getListId());
                         googleItem.isStored = dbItem.isStored;
-                        if (dbItem.hasChildren())
+                        if (dbItem.hasChildren()) {
                             reconcile(dbItem.getChildren(), googleItem.getChildren());
+                        }
                         break;
                     }
+                }
+            }
         }
     }
 
@@ -56,8 +60,13 @@ public class LoadItems implements Callable<List<GTaskList>> {
             if (googleItems.contains(dbItem)) {
                 T googleItem = googleItems.get(googleItems.indexOf(dbItem));
                 List<Item> mergedItems = null;
-                if (dbItem.hasChildren())
+                if (dbItem.hasChildren()) {
+                    if (dbItem.getParentId() == null) {
+                        final T gItem = googleItem;
+                        googleItem.getChildren().forEach(item -> item.setListId(gItem.getListId()));
+                    }
                     mergedItems = merge(dbItem.getChildren(), googleItem.getChildren());
+                }
                 if (dbItem.updated < googleItem.updated) {
                     googleItem.id = dbItem.id;
                     googleItem.setReminder(dbItem.getReminder());
@@ -66,20 +75,19 @@ public class LoadItems implements Callable<List<GTaskList>> {
                 }
                 dbItem.setChildren(mergedItems);
             } else {
-                if (dbItem.isMerged)
-                    dbItem.isDeleted = true;
+                if (dbItem.isMerged) dbItem.isDeleted = true;
             }
             result.add(dbItem);
         }
-        if (!dbItems.isEmpty())
+        if (!dbItems.isEmpty()) {
             for (T googleItem : googleItems) {
-                if (result.contains(googleItem))
-                    continue;
+                if (result.contains(googleItem)) continue;
                 if (dbItems.contains(googleItem)) {
                     T dbItem = dbItems.get(dbItems.indexOf(googleItem));
                     List<Item> mergedItems = null;
-                    if (googleItem.hasChildren())
+                    if (googleItem.hasChildren()) {
                         mergedItems = merge(dbItem.getChildren(), googleItem.getChildren());
+                    }
                     if (googleItem.updated < dbItem.updated) {
                         dbItem.googleId = googleItem.googleId;
                         googleItem = dbItem;
@@ -88,6 +96,7 @@ public class LoadItems implements Callable<List<GTaskList>> {
                 }
                 result.add(googleItem);
             }
+        }
 
         return result;
     }
@@ -97,8 +106,9 @@ public class LoadItems implements Callable<List<GTaskList>> {
         List<GTaskList> tasksFromDB = localDatabase.loadLists();
         if (isSyncWithGTasksEnabled && isNetworkAvailable(context)) {
             List<GTaskList> tasksFromGoogle = remoteServer.loadLists();
-            if (!tasksFromGoogle.isEmpty())
+            if (!tasksFromGoogle.isEmpty()) {
                 reconcile(tasksFromDB, tasksFromGoogle);
+            }
             return merge(tasksFromDB, tasksFromGoogle);
         }
         return tasksFromDB;

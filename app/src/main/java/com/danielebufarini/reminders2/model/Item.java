@@ -1,34 +1,37 @@
+
 package com.danielebufarini.reminders2.model;
-
-import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.Ignore;
-import android.arch.persistence.room.PrimaryKey;
-
-import com.danielebufarini.reminders2.util.ApplicationCache;
-import com.google.api.services.tasks.Tasks;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 
+import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.google.api.services.tasks.Tasks;
+
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.PrimaryKey;
+
 @Entity
 public abstract class Item implements Serializable {
 
-    private static transient final ApplicationCache CACHE = ApplicationCache.INSTANCE;
-    private static final long serialVersionUID = 987654322L;
+    private static transient final ApplicationCache CACHE            = ApplicationCache.INSTANCE;
+    private static final long                       serialVersionUID = 987654322L;
 
     @PrimaryKey
-    public long id;
-    public long updated;
-    public String title;
-    public String googleId;
-    public String accountName;
-    public boolean isDeleted;
-    public boolean isMerged;
+    public long                                     id;
+    public long                                     updated;
+    public String                                   title;
+    public String                                   googleId;
+    public String                                   accountName;
+    public boolean                                  isDeleted;
+    public boolean                                  isMerged;
     @Ignore
-    public boolean isModified;
+    public boolean                                  isModified;
     @Ignore
-    public boolean isStored;
+    public boolean                                  isStored;
+    @Ignore
+    private String                                  parentId;
 
     public Item() {
 
@@ -93,4 +96,8 @@ public abstract class Item implements Serializable {
     public abstract long getReminderInterval();
 
     public abstract void setReminderInterval(long intervall);
+
+    public abstract String getParentId();
+
+    public abstract void setParentId(String parentId);
 }

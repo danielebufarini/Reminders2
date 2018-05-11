@@ -1,8 +1,9 @@
+
 package com.danielebufarini.reminders2.model;
 
-import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.Ignore;
-import android.util.Log;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.List;
 
 import com.danielebufarini.reminders2.services.AsyncHandler;
 import com.danielebufarini.reminders2.util.ApplicationCache;
@@ -10,20 +11,20 @@ import com.google.api.client.util.DateTime;
 import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.model.TaskList;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
+import android.util.Log;
 
 @Entity(tableName = "list")
 public class GTaskList extends Item implements Serializable {
 
-    private static transient final String LOGTAG = GTaskList.class.getSimpleName();
-    private static final long serialVersionUID = 1234567890L;
+    private static transient final String LOGTAG            = GTaskList.class.getSimpleName();
+    private static final long             serialVersionUID  = 1234567890L;
 
     @Ignore
-    public List<GTask> tasks;
-    public boolean isHideCompleted = false;
-    public boolean isSortedByDueDate = true;
+    public List<GTask>                    tasks;
+    public boolean                        isHideCompleted   = false;
+    public boolean                        isSortedByDueDate = true;
 
     public GTaskList() {
 
@@ -50,8 +51,8 @@ public class GTaskList extends Item implements Serializable {
     @Override
     public String toString() {
 
-        return "GTaskList[ id = \"" + id + "\" :: googleId = \"" + googleId + "\""
-                + (" :: title = \"" + title + "\"") + " ]";
+        return "GTaskList[ id = \"" + id + "\" :: googleId = \"" + googleId + "\"" + (" :: title = \"" + title + "\"")
+                + " ]";
     }
 
     @Override
@@ -148,5 +149,15 @@ public class GTaskList extends Item implements Serializable {
     public void setReminderInterval(long interval) {
 
     }
-}
 
+    @Override
+    public String getParentId() {
+
+        return null;
+    }
+
+    @Override
+    public void setParentId(String parentId) {
+
+    }
+}

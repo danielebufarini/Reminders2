@@ -1,18 +1,7 @@
+
 package com.danielebufarini.reminders2.model;
 
-import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.ForeignKey;
-import android.arch.persistence.room.Ignore;
-import android.arch.persistence.room.Index;
-import android.support.annotation.NonNull;
-import android.util.Log;
-
-import com.danielebufarini.reminders2.database.TaskDao;
-import com.danielebufarini.reminders2.services.AsyncHandler;
-import com.danielebufarini.reminders2.util.ApplicationCache;
-import com.google.api.client.util.DateTime;
-import com.google.api.services.tasks.Tasks;
-import com.google.api.services.tasks.model.Task;
+import static android.arch.persistence.room.ForeignKey.CASCADE;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -22,7 +11,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static android.arch.persistence.room.ForeignKey.CASCADE;
+import com.danielebufarini.reminders2.database.TaskDao;
+import com.danielebufarini.reminders2.services.AsyncHandler;
+import com.danielebufarini.reminders2.ui.Reminders;
+import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.google.api.client.util.DateTime;
+import com.google.api.services.tasks.Tasks;
+import com.google.api.services.tasks.model.Task;
+
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.ForeignKey;
+import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.Index;
+import android.support.annotation.NonNull;
+import android.util.Log;
 
 @Entity(tableName = "task",
         foreignKeys = @ForeignKey(entity = GTaskList.class,
@@ -31,40 +33,41 @@ import static android.arch.persistence.room.ForeignKey.CASCADE;
                 onDelete = CASCADE),
         indices = @Index(value = "listId"))
 public class GTask extends Item implements Comparable<GTask>, Serializable {
-    private static final long serialVersionUID = 987654321L;
 
-    public static final String SEPARATOR = "::";
-    public static final String NOTE_TAG = " " + SEPARATOR + " note ";
-    public static final String DUE_TAG = " " + SEPARATOR + " due on ";
-    public static final String REMINDER_TAG = " " + SEPARATOR + " reminder for ";
-    public static final String REMINDER_LATITUDE_TAG = " " + SEPARATOR + " latitude ";
-    public static final String REMINDER_LONGITUDE_TAG = " " + SEPARATOR + " longitute ";
-    public static final String REMINDER_RADIUS_TAG = " " + SEPARATOR + " radius ";
-    public static final String REMINDER_LOCATION_TITLE = " " + SEPARATOR + " location title ";
-    public static final String INTERVAL_TAG = " " + SEPARATOR + " interval ";
-    public static final SimpleDateFormat DUE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
-    public static final SimpleDateFormat REMINDER_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.US);
+    private static final long            serialVersionUID        = 987654321L;
 
-    private static final String TASK_COMPLETED = "completed", NEEDS_ACTION = "needsAction";
-    private static final String LOGTAG = GTask.class.getSimpleName();
+    public static final String           SEPARATOR               = "::";
+    public static final String           NOTE_TAG                = " " + SEPARATOR + " note ";
+    public static final String           DUE_TAG                 = " " + SEPARATOR + " due on ";
+    public static final String           REMINDER_TAG            = " " + SEPARATOR + " reminder for ";
+    public static final String           REMINDER_LATITUDE_TAG   = " " + SEPARATOR + " latitude ";
+    public static final String           REMINDER_LONGITUDE_TAG  = " " + SEPARATOR + " longitute ";
+    public static final String           REMINDER_RADIUS_TAG     = " " + SEPARATOR + " radius ";
+    public static final String           REMINDER_LOCATION_TITLE = " " + SEPARATOR + " location title ";
+    public static final String           INTERVAL_TAG            = " " + SEPARATOR + " interval ";
+    public static final SimpleDateFormat DUE_DATE_FORMAT         = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
+    public static final SimpleDateFormat REMINDER_DATE_FORMAT    = new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.US);
+
+    private static final String          TASK_COMPLETED          = "completed", NEEDS_ACTION = "needsAction";
+    private static final String          LOGTAG                  = GTask.class.getSimpleName();
 
     @Ignore
-    public long completed;
-    public String category;
-    public String notes;
-    public String locationTitle;
-    public long dueDate;
-    public long reminderDate;
-    public long reminderInterval;
-    public long radius;
-    public double latitude;
-    public double longitude;
-    public int priority;
-    public String parentId;
-    private long listId;
-    private String listGoogleId;
+    public long                          completed;
+    public String                        category;
+    public String                        notes;
+    public String                        locationTitle;
+    public long                          dueDate;
+    public long                          reminderDate;
+    public long                          reminderInterval;
+    public long                          radius;
+    public double                        latitude;
+    public double                        longitude;
+    public int                           priority;
+    private String                       parentId;
+    private long                         listId;
+    private String                       listGoogleId;
     @Ignore
-    private List<GTask> subtasks;
+    private List<GTask>                  subtasks;
 
     public GTask() {
 
@@ -108,8 +111,10 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
                     item.isStored = true;
                 });
             }
+            if (Reminders.LOGV) {
+                Log.d(LOGTAG, "db :: inserted task " + this + " in list id " + listId);
+            }
         });
-        Log.d(LOGTAG, "db :: inserted task " + this + " in list id " + listId);
     }
 
     @Override
@@ -121,15 +126,21 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
             if (hasChildren()) {
                 getChildren().forEach(item -> dao.insert((GTask) item));
             }
+            if (Reminders.LOGV) {
+                Log.d(LOGTAG, "db :: deleted task " + this + " in list id " + listId);
+            }
         });
-        Log.d(LOGTAG, "db :: deleted task " + this + " in list id " + listId);
     }
 
     @Override
     public void merge() {
 
-        AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().taskDao().update(this));
-        Log.d(LOGTAG, "db :: updated task " + this + " in list id " + listId);
+        AsyncHandler.post(() -> {
+            ApplicationCache.INSTANCE.getDatabase().taskDao().update(this);
+            if (Reminders.LOGV) {
+                Log.d(LOGTAG, "db :: updated task " + this + " in list id " + listId);
+            }
+        });
     }
 
     private Task newTask() {
@@ -140,8 +151,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         task.setDeleted(isDeleted);
         task.setUpdated(new DateTime(updated));
         task.setStatus(completed != 0 ? TASK_COMPLETED : NEEDS_ACTION);
-        if (dueDate > 0)
-            task.setDue(new DateTime(dueDate));
+        if (dueDate > 0) task.setDue(new DateTime(dueDate));
         return task;
     }
 
@@ -230,6 +240,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         return listId;
     }
 
+    @Override
     public void setListId(long listId) {
 
         this.listId = listId;
@@ -250,13 +261,11 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         String result = null;
         if (index > 0) {
             final int idx = source.indexOf(SEPARATOR, index + SEPARATOR.length());
-            if (idx > 0)
-                result = source.substring(index + tag.length(), idx);
+            if (idx > 0) result = source.substring(index + tag.length(), idx);
             else
                 result = source.substring(index + tag.length());
         }
-        if (result != null)
-            result = result.trim();
+        if (result != null) result = result.trim();
         return result;
     }
 
@@ -275,57 +284,61 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         } else {
             title = str.substring(0, str.indexOf(SEPARATOR));
             String tmp = extractTagValue(str, k, NOTE_TAG);
-            if (tmp != null && !tmp.isEmpty())
-                notes = tmp;
+            if (tmp != null && !tmp.isEmpty()) notes = tmp;
             try {
                 tmp = extractTagValue(str, i, DUE_TAG);
-                if (tmp != null && !tmp.isEmpty())
-                    dueDate = DUE_DATE_FORMAT.parse(tmp).getTime();
+                if (tmp != null && !tmp.isEmpty()) dueDate = DUE_DATE_FORMAT.parse(tmp).getTime();
             } catch (ParseException e) {
                 Log.d(LOGTAG, "error parsing due date", e);
             }
             try {
                 tmp = extractTagValue(str, j, REMINDER_TAG);
-                if (tmp != null && !tmp.isEmpty())
-                    reminderDate = REMINDER_DATE_FORMAT.parse(tmp).getTime();
+                if (tmp != null && !tmp.isEmpty()) reminderDate = REMINDER_DATE_FORMAT.parse(tmp).getTime();
             } catch (ParseException e) {
                 Log.d(LOGTAG, "error parsing reminder date", e);
             }
             try {
                 tmp = extractTagValue(str, l, INTERVAL_TAG);
-                if (tmp != null && !tmp.isEmpty())
-                    reminderInterval = Long.parseLong(tmp);
+                if (tmp != null && !tmp.isEmpty()) reminderInterval = Long.parseLong(tmp);
             } catch (NumberFormatException e) {
                 Log.d(LOGTAG, "error parsing reminder interval", e);
             }
             try {
                 tmp = extractTagValue(str, l, REMINDER_LATITUDE_TAG);
-                if (tmp != null && !tmp.isEmpty())
-                    latitude = Long.parseLong(tmp);
+                if (tmp != null && !tmp.isEmpty()) latitude = Long.parseLong(tmp);
             } catch (NumberFormatException e) {
                 Log.d(LOGTAG, "error parsing reminder interval", e);
             }
             try {
                 tmp = extractTagValue(str, l, REMINDER_LONGITUDE_TAG);
-                if (tmp != null && !tmp.isEmpty())
-                    longitude = Long.parseLong(tmp);
+                if (tmp != null && !tmp.isEmpty()) longitude = Long.parseLong(tmp);
             } catch (NumberFormatException e) {
                 Log.d(LOGTAG, "error parsing reminder interval", e);
             }
             try {
                 tmp = extractTagValue(str, l, REMINDER_RADIUS_TAG);
-                if (tmp != null && !tmp.isEmpty())
-                    radius = Long.parseLong(tmp);
+                if (tmp != null && !tmp.isEmpty()) radius = Long.parseLong(tmp);
             } catch (NumberFormatException e) {
                 Log.d(LOGTAG, "error parsing reminder interval", e);
             }
             try {
                 tmp = extractTagValue(str, l, REMINDER_LOCATION_TITLE);
-                if (tmp != null && !tmp.isEmpty())
-                    locationTitle = tmp;
+                if (tmp != null && !tmp.isEmpty()) locationTitle = tmp;
             } catch (NumberFormatException e) {
                 Log.d(LOGTAG, "error parsing reminder interval", e);
             }
         }
+    }
+
+    @Override
+    public String getParentId() {
+
+        return parentId;
+    }
+
+    @Override
+    public void setParentId(String parentId) {
+
+        this.parentId = parentId;
     }
 }

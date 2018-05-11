@@ -1,15 +1,15 @@
 package com.danielebufarini.reminders2.synchronisation;
 
-import com.danielebufarini.reminders2.model.GTask;
-import com.danielebufarini.reminders2.model.GTaskList;
-import com.danielebufarini.reminders2.util.ApplicationCache;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
+import com.danielebufarini.reminders2.model.GTask;
+import com.danielebufarini.reminders2.model.GTaskList;
+import com.danielebufarini.reminders2.util.ApplicationCache;
 
 public class LocalDatabase implements Resource {
     public static final String LOGTAG = LocalDatabase.class.getSimpleName();
@@ -36,8 +36,8 @@ public class LocalDatabase implements Resource {
         while (iterator.hasNext()) {
             GTask task = iterator.next();
             task.isStored = true;
-            if (task.parentId != null && !task.parentId.isEmpty()) {
-                map.get(task.parentId).getChildren().add(task);
+            if (task.getParentId() != null && !task.getParentId().isEmpty()) {
+                map.get(task.getParentId()).getChildren().add(task);
                 iterator.remove();
             }
         }

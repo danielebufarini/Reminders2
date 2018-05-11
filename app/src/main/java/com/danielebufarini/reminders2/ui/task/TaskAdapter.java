@@ -1,5 +1,14 @@
 package com.danielebufarini.reminders2.ui.task;
 
+import java.util.Calendar;
+import java.util.List;
+
+import com.danielebufarini.reminders2.R;
+import com.danielebufarini.reminders2.model.GTask;
+import com.danielebufarini.reminders2.model.Priority;
+import com.danielebufarini.reminders2.util.Dates;
+import com.danielebufarini.reminders2.util.Notifications;
+
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -15,15 +24,6 @@ import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import com.danielebufarini.reminders2.R;
-import com.danielebufarini.reminders2.model.GTask;
-import com.danielebufarini.reminders2.model.Priority;
-import com.danielebufarini.reminders2.util.Dates;
-import com.danielebufarini.reminders2.util.Notifications;
-
-import java.util.Calendar;
-import java.util.List;
 
 public class TaskAdapter extends ArrayAdapter<GTask> {
     private static Calendar calendar = Calendar.getInstance();
@@ -80,7 +80,7 @@ public class TaskAdapter extends ArrayAdapter<GTask> {
             task.reminderDate = 0;
         boolean isChecked = task.completed > 0;
         taskViewHolder.padding.setVisibility(
-                (task.parentId != null && !task.parentId.isEmpty()) ? View.VISIBLE : View.GONE);
+                (task.getParentId() != null && !task.getParentId().isEmpty()) ? View.VISIBLE : View.GONE);
         taskViewHolder.title.setText(task.title);
         Linkify.addLinks(taskViewHolder.title, Linkify.ALL);
         if (isChecked)

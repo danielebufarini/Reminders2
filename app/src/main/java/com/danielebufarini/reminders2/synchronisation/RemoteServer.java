@@ -1,7 +1,10 @@
 package com.danielebufarini.reminders2.synchronisation;
 
-import android.content.Context;
-import android.util.Log;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.GTaskList;
@@ -11,11 +14,8 @@ import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.model.TaskList;
 import com.google.api.services.tasks.model.TaskLists;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import android.content.Context;
+import android.util.Log;
 
 public class RemoteServer implements Resource {
     public static final String LOGTAG = RemoteServer.class.getSimpleName();
@@ -44,11 +44,11 @@ public class RemoteServer implements Resource {
                 gtask.completed = task.getCompleted() != null ? task.getCompleted().getValue() : 0;
                 gtask.dueDate = task.getDue() != null ? task.getDue().getValue() : 0;
                 gtask.isDeleted = task.getDeleted() != null ? task.getDeleted() : false;
-                gtask.parentId = task.getParent();
+                gtask.setParentId(task.getParent());
                 gtask.setListId(list.id);
                 gtask.setListGoogleId(list.googleId);
                 gtask.accountName = accountName;
-                if (gtask.parentId == null || gtask.parentId.isEmpty()) {
+                if (gtask.getParentId() == null || gtask.getParentId().isEmpty()) {
                     gtasks.put(gtask.googleId, gtask);
                 } else {
                     subtasks.add(gtask);
@@ -64,7 +64,7 @@ public class RemoteServer implements Resource {
     private void insertSubtasksInList(Map<String, GTask> tasks, List<GTask> subtasks) {
 
         subtasks.forEach(subtask -> {
-            GTask task = tasks.get(subtask.parentId);
+            GTask task = tasks.get(subtask.getParentId());
             if (task != null) {
                 task.getChildren().add(subtask);
             }
