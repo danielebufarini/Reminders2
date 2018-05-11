@@ -1,11 +1,11 @@
 package com.danielebufarini.reminders2.synchronisation.commands;
 
-import android.util.Log;
+import java.io.IOException;
 
 import com.danielebufarini.reminders2.model.Item;
 import com.google.api.services.tasks.Tasks;
 
-import java.io.IOException;
+import android.util.Log;
 
 public class InsertInGoogleTaskAndMergeInDB implements Command {
     private static final String TAG = InsertInGoogleTaskAndMergeInDB.class.getSimpleName();
@@ -22,13 +22,13 @@ public class InsertInGoogleTaskAndMergeInDB implements Command {
     public void execute() {
 
         try {
-            item.isMerged = true;
+            item.setMerged(true);
             item.insert(googleService);
         } catch (IOException e) {
-            item.isMerged = false;
+            item.setMerged(false);
             Log.w(TAG, "", e);
         }
-        if (item.isStored && (item.isMerged || item.isModified)) {
+        if (item.isStored && (item.isMerged() || item.isModified)) {
             item.merge();
         }
     }

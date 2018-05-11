@@ -31,8 +31,12 @@ public class LoadItems implements Callable<List<GTaskList>> {
 
         if (dbItems.isEmpty()) {
             for (T item : googleItems) {
+                item.setMerged(true);
                 item.insert();
-                item.getChildren().forEach(Item::insert);
+                item.getChildren().forEach(item1 -> {
+                    item1.setMerged(true);
+                    item1.insert();
+                });
                 dbItems.add(item);
             }
         } else {
@@ -74,8 +78,8 @@ public class LoadItems implements Callable<List<GTaskList>> {
                     dbItem = googleItem;
                 }
                 dbItem.setChildren(mergedItems);
-            } else {
-                if (dbItem.isMerged) dbItem.isDeleted = true;
+            } else if (dbItem.isMerged()) {
+                dbItem.isDeleted = true;
             }
             result.add(dbItem);
         }

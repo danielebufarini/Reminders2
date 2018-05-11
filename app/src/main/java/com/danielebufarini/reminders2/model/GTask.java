@@ -27,10 +27,12 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 @Entity(tableName = "task",
-        foreignKeys = @ForeignKey(entity = GTaskList.class,
+        foreignKeys = {
+            @ForeignKey(entity = GTaskList.class,
                 parentColumns = "id",
                 childColumns = "listId",
-                onDelete = CASCADE),
+                onDelete = CASCADE)
+        },
         indices = @Index(value = "listId"))
 public class GTask extends Item implements Comparable<GTask>, Serializable {
 
@@ -124,7 +126,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
             TaskDao dao = ApplicationCache.INSTANCE.getDatabase().taskDao();
             dao.delete(this);
             if (hasChildren()) {
-                getChildren().forEach(item -> dao.insert((GTask) item));
+                getChildren().forEach(item -> dao.delete((GTask) item));
             }
             if (Reminders.LOGV) {
                 Log.d(LOGTAG, "db :: deleted task " + this + " in list id " + listId);

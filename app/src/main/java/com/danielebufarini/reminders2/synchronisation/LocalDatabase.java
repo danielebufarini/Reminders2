@@ -11,7 +11,7 @@ import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.GTaskList;
 import com.danielebufarini.reminders2.util.ApplicationCache;
 
-public class LocalDatabase implements Resource {
+public class LocalDatabase implements Source {
     public static final String LOGTAG = LocalDatabase.class.getSimpleName();
     private final String accountName;
 

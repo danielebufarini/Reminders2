@@ -17,7 +17,7 @@ import com.google.api.services.tasks.model.TaskLists;
 import android.content.Context;
 import android.util.Log;
 
-public class RemoteServer implements Resource {
+public class RemoteServer implements Source {
     public static final String LOGTAG = RemoteServer.class.getSimpleName();
     private final String accountName;
     private final Tasks googleService;

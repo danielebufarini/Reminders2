@@ -25,7 +25,7 @@ public abstract class Item implements Serializable {
     public String                                   googleId;
     public String                                   accountName;
     public boolean                                  isDeleted;
-    public boolean                                  isMerged;
+    private boolean                                 isMerged;
     @Ignore
     public boolean                                  isModified;
     @Ignore
@@ -100,4 +100,14 @@ public abstract class Item implements Serializable {
     public abstract String getParentId();
 
     public abstract void setParentId(String parentId);
+
+    public boolean isMerged() {
+
+        return isMerged;
+    }
+
+    public void setMerged(boolean merged) {
+
+        isMerged = merged;
+    }
 }
