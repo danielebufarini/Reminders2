@@ -173,7 +173,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     @Override
     public boolean hasChildren() {
 
-        return subtasks == null || !subtasks.isEmpty();
+        return subtasks != null && !subtasks.isEmpty();
     }
 
     @Override
