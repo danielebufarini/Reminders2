@@ -1,5 +1,14 @@
 package com.danielebufarini.reminders2.services;
 
+import static com.danielebufarini.reminders2.ui.Reminders.LOGV;
+import static com.danielebufarini.reminders2.ui.Reminders.PREF_ACCOUNT_NAME;
+
+import com.danielebufarini.reminders2.R;
+import com.danielebufarini.reminders2.database.DatabaseHelper;
+import com.danielebufarini.reminders2.database.Tables;
+import com.danielebufarini.reminders2.ui.NotificationActivity;
+import com.danielebufarini.reminders2.ui.Reminders;
+
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -12,15 +21,6 @@ import android.os.PowerManager.WakeLock;
 import android.os.Vibrator;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-
-import com.danielebufarini.reminders2.R;
-import com.danielebufarini.reminders2.database.DatabaseHelper;
-import com.danielebufarini.reminders2.database.Tables;
-import com.danielebufarini.reminders2.ui.NotificationActivity;
-import com.danielebufarini.reminders2.ui.Reminders;
-
-import static com.danielebufarini.reminders2.ui.Reminders.LOGV;
-import static com.danielebufarini.reminders2.ui.Reminders.PREF_ACCOUNT_NAME;
 
 public class AlarmReceiver extends BroadcastReceiver {
     private static final long[] VIBRATE_PATTERN = {0, 250, 0, 250, 0, 500, 0, 500};
@@ -78,7 +78,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                     long reminderDate = cursor.getLong(cursor.getColumnIndexOrThrow(Tables.REMINDER_DATE));
                     long reminderInterval = cursor.getLong(cursor.getColumnIndexOrThrow(Tables.REMINDER_INTERVAL));
                     if (reminderDate > System.currentTimeMillis() || reminderInterval > 0) {
-                        long id = cursor.getLong(cursor.getColumnIndexOrThrow(Tables.ID));
+                        String id = cursor.getString(cursor.getColumnIndexOrThrow(Tables.ID));
                         String title = cursor.getString(cursor.getColumnIndexOrThrow(Tables.TITLE));
                         long dueDate = cursor.getLong(cursor.getColumnIndexOrThrow(Tables.DUE_DATE));
                         long listId = cursor.getLong(cursor.getColumnIndexOrThrow(Tables.LIST_ID));
@@ -126,7 +126,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         NotificationManager notificationManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        int notificationId = NotificationUtils.getNotificationId(intent.getExtras().getLong(NotificationUtils.ID));
+        int notificationId = NotificationUtils.getNotificationId(intent.getExtras().getString(NotificationUtils.ID));
         notificationManager.notify(notificationId, builder.build());
     }
 }

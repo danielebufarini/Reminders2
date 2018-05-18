@@ -9,7 +9,7 @@ import com.danielebufarini.reminders2.model.GTaskList;
 
 public interface Source {
 
-    List<GTask> loadTasks(GTaskList list) throws IOException;
+    List<GTask> getTasks(GTaskList list) throws IOException;
 
-    List<GTaskList> loadLists();
+    List<GTaskList> getLists();
 }

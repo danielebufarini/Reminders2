@@ -1,5 +1,20 @@
 package com.danielebufarini.reminders2.ui.task;
 
+import java.util.Calendar;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import com.danielebufarini.reminders2.R;
+import com.danielebufarini.reminders2.model.GTask;
+import com.danielebufarini.reminders2.model.Priority;
+import com.danielebufarini.reminders2.ui.LocationBasedReminderFragment;
+import com.danielebufarini.reminders2.ui.PagerAdapter;
+import com.danielebufarini.reminders2.ui.TaskFragment;
+import com.danielebufarini.reminders2.ui.TimeBasedReminderFragment;
+import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.danielebufarini.reminders2.util.Dates;
+
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
@@ -14,21 +29,6 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-
-import com.danielebufarini.reminders2.R;
-import com.danielebufarini.reminders2.model.GTask;
-import com.danielebufarini.reminders2.model.Priority;
-import com.danielebufarini.reminders2.ui.LocationBasedReminderFragment;
-import com.danielebufarini.reminders2.ui.PagerAdapter;
-import com.danielebufarini.reminders2.ui.TaskFragment;
-import com.danielebufarini.reminders2.ui.TimeBasedReminderFragment;
-import com.danielebufarini.reminders2.util.ApplicationCache;
-import com.danielebufarini.reminders2.util.Dates;
-
-import java.util.Calendar;
-import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 
 public class ManageTaskActivity extends AppCompatActivity
         implements TimeBasedReminderFragment.OnReminderDateChangedListener,
@@ -106,10 +106,11 @@ public class ManageTaskActivity extends AppCompatActivity
                 // navigate up to the logical parent activity.
                 upIntent.putExtra(TaskFragment.TASK, task);
                 upIntent.putExtra(TaskFragment.TASK_POSITION, taskPosition);
-                if (getParent() == null)
+                if (getParent() == null) {
                     setResult(RESULT_OK, upIntent);
-                else
+                } else {
                     getParent().setResult(RESULT_OK, upIntent);
+                }
                 NavUtils.navigateUpTo(this, upIntent);
             }
             return true;
@@ -262,7 +263,7 @@ public class ManageTaskActivity extends AppCompatActivity
 
         GTask task = new GTask();
         task.title = "";
-        task.googleId = "";
+        task.setGoogleId("");
         task.accountName = CACHE.accountName();
         task.notes = EMPTY_STRING;
         task.priority = Priority.NONE.getPriority();

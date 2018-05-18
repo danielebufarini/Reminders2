@@ -31,28 +31,28 @@ public class GTaskList extends Item implements Serializable {
         super();
     }
 
-    @Override
-    public long getListId() {
-
-        return id;
-    }
-
-    @Override
-    public void setListId(long listId) {
-
-    }
-
     @Ignore
-    public GTaskList(Long id) {
+    public GTaskList(String id) {
 
         super(id);
     }
 
     @Override
+    public String getListId() {
+
+        return id;
+    }
+
+    @Override
+    public void setListId(String listId) {
+
+    }
+
+    @Override
     public String toString() {
 
-        return "GTaskList[ id = \"" + id + "\" :: googleId = \"" + googleId + "\"" + (" :: title = \"" + title + "\"")
-                + " ]";
+        return "GTaskList[ id = \"" + id + "\" :: googleId = \"" + getGoogleId() + "\""
+                + (" :: title = \"" + title + "\"") + " ]";
     }
 
     @Override
@@ -89,14 +89,14 @@ public class GTaskList extends Item implements Serializable {
     public void insert(Tasks googleService) throws IOException {
 
         TaskList taskList = googleService.tasklists().insert(newTaskList()).execute();
-        googleId = taskList.getId();
+        setGoogleId(taskList.getId());
         Log.d(LOGTAG, "google :: inserted list id " + id);
     }
 
     @Override
     public void delete(Tasks googleService) throws IOException {
 
-        googleService.tasklists().delete(googleId).execute();
+        googleService.tasklists().delete(getGoogleId()).execute();
         Log.d(LOGTAG, "google :: deleted list id " + id);
     }
 
@@ -104,8 +104,8 @@ public class GTaskList extends Item implements Serializable {
     public void merge(Tasks googleService) throws IOException {
 
         TaskList taskList = newTaskList();
-        taskList.setId(googleId);
-        googleService.tasklists().update(googleId, taskList).execute();
+        taskList.setId(getGoogleId());
+        googleService.tasklists().update(getGoogleId(), taskList).execute();
         Log.d(LOGTAG, "google :: updated list id " + id);
     }
 

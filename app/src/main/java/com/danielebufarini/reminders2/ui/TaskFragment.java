@@ -1,5 +1,14 @@
 package com.danielebufarini.reminders2.ui;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.danielebufarini.reminders2.R;
+import com.danielebufarini.reminders2.model.GTask;
+import com.danielebufarini.reminders2.ui.task.ManageTaskActivity;
+import com.danielebufarini.reminders2.ui.task.TaskAdapter;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -10,15 +19,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
-
-import com.danielebufarini.reminders2.R;
-import com.danielebufarini.reminders2.model.GTask;
-import com.danielebufarini.reminders2.ui.task.ManageTaskActivity;
-import com.danielebufarini.reminders2.ui.task.TaskAdapter;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TaskFragment extends Fragment implements Serializable {
     public static final String TASK = "task";
@@ -101,7 +101,7 @@ public class TaskFragment extends Fragment implements Serializable {
         }
     }
 
-    public void onFolderSelected(List<GTask> tasks) {
+    public void onListSelected(List<GTask> tasks) {
 
         adapter.clear();
         if (tasks != null) {

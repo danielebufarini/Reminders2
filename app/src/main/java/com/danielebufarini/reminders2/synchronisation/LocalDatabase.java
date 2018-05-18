@@ -21,7 +21,7 @@ public class LocalDatabase implements Source {
     }
 
     @Override
-    public List<GTask> loadTasks(GTaskList list) {
+    public List<GTask> getTasks(GTaskList list) {
 
         List<GTask> tasks = ApplicationCache.INSTANCE.getDatabase().taskDao()
                 .loadAllTasksByListId(list.id, accountName);
@@ -44,12 +44,12 @@ public class LocalDatabase implements Source {
     }
 
     @Override
-    public List<GTaskList> loadLists() {
+    public List<GTaskList> getLists() {
 
         List<GTaskList> lists = ApplicationCache.INSTANCE.getDatabase().listDao().loadLists(accountName);
         lists.forEach(list -> {
             list.isStored = true;
-            list.tasks = loadTasks(list);
+            list.tasks = getTasks(list);
         });
         return lists;
     }

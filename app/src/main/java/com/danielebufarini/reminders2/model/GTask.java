@@ -26,12 +26,16 @@ import android.arch.persistence.room.Index;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+
+
+
+
 @Entity(tableName = "task",
         foreignKeys = {
-            @ForeignKey(entity = GTaskList.class,
-                parentColumns = "id",
-                childColumns = "listId",
-                onDelete = CASCADE)
+                @ForeignKey(entity = GTaskList.class,
+                        parentColumns = "id",
+                        childColumns = "listId",
+                        onDelete = CASCADE)
         },
         indices = @Index(value = "listId"))
 public class GTask extends Item implements Comparable<GTask>, Serializable {
@@ -66,7 +70,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public double                        longitude;
     public int                           priority;
     private String                       parentId;
-    private long                         listId;
+    private String                       listId;
     private String                       listGoogleId;
     @Ignore
     private List<GTask>                  subtasks;
@@ -77,20 +81,15 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     }
 
     @Ignore
-    public GTask(long id) {
+    public GTask(String id) {
 
         super(id);
-    }
-
-    public String getGoogleId() {
-
-        return googleId;
     }
 
     @Override
     public String toString() {
 
-        return "GTask[ id = \"" + id + "\" :: googleId = \"" + googleId + "\""
+        return "GTask[ id = \"" + id + "\" :: googleId = \"" + getGoogleId() + "\""
                 + (title != null ? " :: title = \"" + title + "\"" : "") + " ]";
     }
 
@@ -162,14 +161,14 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
 
         Task task = newTask();
         Task newTask = googleService.tasks().insert(listGoogleId, task).execute();
-        googleId = newTask.getId();
+        setGoogleId(newTask.getId());
         Log.d(LOGTAG, "google :: inserted task " + this + " in list " + listGoogleId);
     }
 
     @Override
     public void delete(Tasks googleService) throws IOException {
 
-        googleService.tasks().delete(listGoogleId, googleId).execute();
+        googleService.tasks().delete(listGoogleId, getGoogleId()).execute();
         Log.d(LOGTAG, "google :: deleted task " + this + " in list " + listGoogleId);
     }
 
@@ -177,7 +176,7 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public void merge(Tasks googleService) throws IOException {
 
         Task task = newTask();
-        task.setId(googleId);
+        task.setId(getGoogleId());
         googleService.tasks().update(listGoogleId, task.getId(), task).execute();
         Log.d(LOGTAG, "google :: updated task " + this + " in list " + listGoogleId);
     }
@@ -237,13 +236,13 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     }
 
     @Override
-    public long getListId() {
+    public String getListId() {
 
         return listId;
     }
 
     @Override
-    public void setListId(long listId) {
+    public void setListId(String listId) {
 
         this.listId = listId;
     }

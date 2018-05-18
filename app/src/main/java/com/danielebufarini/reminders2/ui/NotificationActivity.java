@@ -1,13 +1,13 @@
 package com.danielebufarini.reminders2.ui;
 
+import com.danielebufarini.reminders2.model.GTask;
+import com.danielebufarini.reminders2.services.NotificationUtils;
+
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-
-import com.danielebufarini.reminders2.model.GTask;
-import com.danielebufarini.reminders2.services.NotificationUtils;
 
 public class NotificationActivity extends Activity {
     private static final long TEN_MINUTES = 10 * 60 * 1000L;
@@ -24,7 +24,7 @@ public class NotificationActivity extends Activity {
             NotificationManager notificationManager =
                     (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             String action = intent.getStringExtra("notificaton action");
-            long notificationId = intent.getExtras().getLong(NotificationUtils.ID);
+            String notificationId = intent.getExtras().getString(NotificationUtils.ID);
             if ("snooze".equals(action)) {
                 final String title = extras.getString(NotificationUtils.TITLE);
                 final long dueDateInMillis = extras.getLong(NotificationUtils.DUE_DATE);

@@ -17,27 +17,27 @@ import com.google.api.services.tasks.model.TaskLists;
 import android.content.Context;
 import android.util.Log;
 
-public class RemoteServer implements Source {
-    public static final String LOGTAG = RemoteServer.class.getSimpleName();
+public class GoogleTasksRemoteServer implements Source {
+    public static final String LOGTAG = GoogleTasksRemoteServer.class.getSimpleName();
     private final String accountName;
     private final Tasks googleService;
 
-    public RemoteServer(final Context context, String accountName) {
+    public GoogleTasksRemoteServer(final Context context, String accountName) {
 
         this.accountName = accountName;
         googleService = GoogleService.getGoogleTasksService(context, accountName);
     }
 
     @Override
-    public List<GTask> loadTasks(GTaskList list) throws IOException {
+    public List<GTask> getTasks(GTaskList list) throws IOException {
 
         List<GTask> subtasks = new ArrayList<>(20);
         Map<String, GTask> gtasks = new HashMap<>(20);
-        com.google.api.services.tasks.model.Tasks tasks = googleService.tasks().list(list.googleId).execute();
+        com.google.api.services.tasks.model.Tasks tasks = googleService.tasks().list(list.getGoogleId()).execute();
         if (tasks.getItems() != null) {
             for (com.google.api.services.tasks.model.Task task : tasks.getItems()) {
                 GTask gtask = new GTask();
-                gtask.googleId = task.getId();
+                gtask.setGoogleId(task.getId());
                 gtask.title = task.getTitle();
                 gtask.updated = task.getUpdated().getValue();
                 gtask.notes = task.getNotes();
@@ -46,10 +46,10 @@ public class RemoteServer implements Source {
                 gtask.isDeleted = task.getDeleted() != null ? task.getDeleted() : false;
                 gtask.setParentId(task.getParent());
                 gtask.setListId(list.id);
-                gtask.setListGoogleId(list.googleId);
+                gtask.setListGoogleId(list.getGoogleId());
                 gtask.accountName = accountName;
                 if (gtask.getParentId() == null || gtask.getParentId().isEmpty()) {
-                    gtasks.put(gtask.googleId, gtask);
+                    gtasks.put(gtask.getGoogleId(), gtask);
                 } else {
                     subtasks.add(gtask);
                 }
@@ -72,7 +72,7 @@ public class RemoteServer implements Source {
     }
 
     @Override
-    public List<GTaskList> loadLists() {
+    public List<GTaskList> getLists() {
 
         List<GTaskList> googleItems = new ArrayList<>(30);
         try {
@@ -80,11 +80,11 @@ public class RemoteServer implements Source {
             for (TaskList taskList : taskLists.getItems())
                 try {
                     GTaskList list = new GTaskList();
-                    list.googleId = taskList.getId();
+                    list.setGoogleId(taskList.getId());
                     list.title = taskList.getTitle();
                     list.updated = taskList.getUpdated().getValue();
                     list.accountName = accountName;
-                    list.tasks = loadTasks(list);
+                    list.tasks = getTasks(list);
                     googleItems.add(list);
                     if (Reminders.LOGV) Log.d(LOGTAG, "google :: downloaded list " + list);
                 } catch (Exception e) {

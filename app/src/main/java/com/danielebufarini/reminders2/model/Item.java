@@ -4,48 +4,54 @@ package com.danielebufarini.reminders2.model;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
 
-import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.api.services.tasks.Tasks;
 
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
+import android.support.annotation.NonNull;
 
 @Entity
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = GTaskList.class, name = "list"),
+        @JsonSubTypes.Type(value = GTask.class, name = "task")
+})
 public abstract class Item implements Serializable {
 
-    private static transient final ApplicationCache CACHE            = ApplicationCache.INSTANCE;
-    private static final long                       serialVersionUID = 987654322L;
+    private static final long serialVersionUID = 987654322L;
 
     @PrimaryKey
-    public long                                     id;
-    public long                                     updated;
-    public String                                   title;
-    public String                                   googleId;
-    public String                                   accountName;
-    public boolean                                  isDeleted;
-    private boolean                                 isMerged;
+    @NonNull
+    public String             id;
+    public long               updated;
+    public String             title;
+    private String            googleId;
+    public String             accountName;
+    public boolean            isDeleted;
+    private boolean           isMerged;
     @Ignore
-    public boolean                                  isModified;
+    public boolean            isModified;
     @Ignore
-    public boolean                                  isStored;
-    @Ignore
-    private String                                  parentId;
+    public boolean            isStored;
 
     public Item() {
 
-        id = generateId();
+        id = UUID.randomUUID().toString();
     }
 
-    public Item(long id) {
+    public Item(@NonNull String id) {
 
         this.id = id;
-    }
-
-    private static long generateId() {
-
-        return CACHE.getNextLong();
     }
 
     @Override
@@ -56,18 +62,18 @@ public abstract class Item implements Serializable {
 
         Item item = (Item) o;
 
-        return id == item.id;
+        return id != null ? id.equals(item.id) : item.id == null;
     }
 
     @Override
     public int hashCode() {
 
-        return (int) (id ^ (id >>> 32));
+        return id != null ? id.hashCode() : 0;
     }
 
-    public abstract long getListId();
+    public abstract String getListId();
 
-    public abstract void setListId(long listId);
+    public abstract void setListId(String listId);
 
     public abstract void insert();
 
@@ -109,5 +115,15 @@ public abstract class Item implements Serializable {
     public void setMerged(boolean merged) {
 
         isMerged = merged;
+    }
+
+    public String getGoogleId() {
+
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+
+        this.googleId = googleId;
     }
 }

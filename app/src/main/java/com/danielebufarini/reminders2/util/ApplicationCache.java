@@ -1,28 +1,28 @@
-package com.danielebufarini.reminders2.util;
 
-import com.danielebufarini.reminders2.database.RemindersDatabase;
-import com.danielebufarini.reminders2.model.GTask;
-import com.danielebufarini.reminders2.model.GTaskList;
+package com.danielebufarini.reminders2.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+
+import com.danielebufarini.reminders2.database.RemindersDatabase;
+import com.danielebufarini.reminders2.model.GTask;
+import com.danielebufarini.reminders2.model.GTaskList;
 
 public enum ApplicationCache {
     INSTANCE;
 
     private final static Object listsLock = new Object();
 
-    private List<GTaskList> folders = new ArrayList<>();
-    private AtomicInteger value;
-    private int activeFolder;
-    private String accountName;
-    private AtomicLong atomicLong;
-    private Boolean isSyncWithGTasksEnabled;
-    private GTask task;
-    private RemindersDatabase database;
+    private List<GTaskList>     folders   = new ArrayList<>();
+    private AtomicInteger       value;
+    private int                 activeFolder;
+    private String              accountName;
+    private Boolean             isSyncWithGTasksEnabled;
+    private GTask               task;
+    private RemindersDatabase   database;
+    private volatile boolean    isDriveAvailable;
 
     public List<GTaskList> getLists() {
 
@@ -78,21 +78,6 @@ public enum ApplicationCache {
         this.accountName = accountName;
     }
 
-    public void setAtomicLongValue(long value) {
-
-        this.atomicLong = new AtomicLong(value);
-    }
-
-    public boolean isAtomicLongNull() {
-
-        return atomicLong == null;
-    }
-
-    public long getNextLong() {
-
-        return atomicLong.getAndIncrement();
-    }
-
     public GTask getTask() {
 
         return task;
@@ -111,5 +96,15 @@ public enum ApplicationCache {
     public void setDatabase(RemindersDatabase database) {
 
         this.database = database;
+    }
+
+    public boolean isGoogleDriveAvailable() {
+
+        return isDriveAvailable;
+    }
+
+    public void setGoogleDriveAvailable(boolean driveAvailable) {
+
+        isDriveAvailable = driveAvailable;
     }
 }

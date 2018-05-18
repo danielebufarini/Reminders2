@@ -1,9 +1,9 @@
 package com.danielebufarini.reminders2.synchronisation.commands;
 
+import java.io.IOException;
+
 import com.danielebufarini.reminders2.model.Item;
 import com.google.api.services.tasks.Tasks;
-
-import java.io.IOException;
 
 public class DeleteFromGoogleTaskAndFromDB implements Command {
     private final Tasks googleService;
@@ -19,7 +19,7 @@ public class DeleteFromGoogleTaskAndFromDB implements Command {
     public void execute() {
 
         try {
-            if (item.googleId != null && item.googleId.length() > 0)
+            if (item.getGoogleId() != null && item.getGoogleId().length() > 0)
                 item.delete(googleService);
             if (item.isStored)
                 item.delete();
