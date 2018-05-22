@@ -14,7 +14,6 @@ import com.danielebufarini.reminders2.model.GTaskList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.android.gms.drive.DriveContents;
 import com.google.android.gms.drive.DriveFile;
-import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.DriveResourceClient;
 import com.google.android.gms.drive.Metadata;
 import com.google.android.gms.drive.MetadataBuffer;
@@ -27,9 +26,9 @@ import android.util.Log;
 
 public class GoogleDriveSource {
 
-    private static transient final String       TAG    = GoogleDriveSource.class.getSimpleName();
-    private static transient final ObjectMapper MAPPER = new ObjectMapper();
-    private static Source EMPTY_SOURCE = new Source() {
+    private static final String       TAG    = GoogleDriveSource.class.getSimpleName();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Source EMPTY_SOURCE = new Source() {
         @Override
         public List<GTask> getTasks(GTaskList list) {
 
@@ -57,8 +56,7 @@ public class GoogleDriveSource {
             Iterator<Metadata> iterator = metadataBuffer.iterator();
             if (iterator.hasNext()) {
                 Metadata metadata = iterator.next();
-                DriveId driveId = metadata.getDriveId();
-                Task<DriveContents> openFileTask = driveResourceClient.openFile(driveId.asDriveFile(),
+                Task<DriveContents> openFileTask = driveResourceClient.openFile(metadata.getDriveId().asDriveFile(),
                         DriveFile.MODE_READ_ONLY);
                 openFileTask.continueWithTask(task -> {
                     DriveContents contents = task.getResult();
@@ -87,6 +85,8 @@ public class GoogleDriveSource {
                     callback.googleDriveSourceReady(EMPTY_SOURCE);
                 });
                 metadataBuffer.release();
+            } else {
+                callback.googleDriveSourceReady(EMPTY_SOURCE);
             }
         }).addOnFailureListener(e -> {
             Log.e(TAG, "Cannot get Google Drive metadatabuffer", e);

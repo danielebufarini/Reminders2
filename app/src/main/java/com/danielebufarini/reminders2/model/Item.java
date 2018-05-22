@@ -1,7 +1,6 @@
 
 package com.danielebufarini.reminders2.model;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
@@ -9,7 +8,6 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.api.services.tasks.Tasks;
 
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
@@ -80,12 +78,6 @@ public abstract class Item implements Serializable {
     public abstract void delete();
 
     public abstract void merge();
-
-    public abstract void insert(Tasks googleService) throws IOException;
-
-    public abstract void delete(Tasks googleService) throws IOException;
-
-    public abstract void merge(Tasks googleService) throws IOException;
 
     public abstract boolean hasChildren();
 

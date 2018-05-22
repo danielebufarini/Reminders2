@@ -1,14 +1,14 @@
 
 package com.danielebufarini.reminders2.model;
 
-import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.danielebufarini.reminders2.services.AsyncHandler;
 import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.api.client.util.DateTime;
-import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.model.TaskList;
 
 import android.arch.persistence.room.Entity;
@@ -16,6 +16,7 @@ import android.arch.persistence.room.Ignore;
 import android.util.Log;
 
 @Entity(tableName = "list")
+@JsonIgnoreProperties(value = { "children" })
 public class GTaskList extends Item implements Serializable {
 
     private static transient final String LOGTAG            = GTaskList.class.getSimpleName();
@@ -86,38 +87,15 @@ public class GTaskList extends Item implements Serializable {
     }
 
     @Override
-    public void insert(Tasks googleService) throws IOException {
-
-        TaskList taskList = googleService.tasklists().insert(newTaskList()).execute();
-        setGoogleId(taskList.getId());
-        Log.d(LOGTAG, "google :: inserted list id " + id);
-    }
-
-    @Override
-    public void delete(Tasks googleService) throws IOException {
-
-        googleService.tasklists().delete(getGoogleId()).execute();
-        Log.d(LOGTAG, "google :: deleted list id " + id);
-    }
-
-    @Override
-    public void merge(Tasks googleService) throws IOException {
-
-        TaskList taskList = newTaskList();
-        taskList.setId(getGoogleId());
-        googleService.tasklists().update(getGoogleId(), taskList).execute();
-        Log.d(LOGTAG, "google :: updated list id " + id);
-    }
-
-    @Override
     public boolean hasChildren() {
 
-        return true;
+        return tasks != null && !tasks.isEmpty();
     }
 
     @Override
     public <T extends Item> List<T> getChildren() {
 
+        if (tasks == null) tasks = new ArrayList<>(20);
         return (List<T>) tasks;
     }
 

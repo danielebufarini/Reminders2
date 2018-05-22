@@ -3,12 +3,12 @@ package com.danielebufarini.reminders2.synchronisation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import com.danielebufarini.reminders2.model.GTaskList;
 import com.danielebufarini.reminders2.model.Item;
+import com.danielebufarini.reminders2.util.ApplicationCache;
 
-public class TasksLoader implements Callable<List<GTaskList>> {
+public class TasksLoader {
 
     private final LocalDatabase localDatabase;
     private final Source        remoteSource;
@@ -21,17 +21,19 @@ public class TasksLoader implements Callable<List<GTaskList>> {
 
     private <T extends Item> void reconcile(List<T> dbItems, List<T> googleItems) {
 
-        if (dbItems.isEmpty()) {
+        if (dbItems.isEmpty() && googleItems != null) {
             for (T item : googleItems) {
                 item.setMerged(true);
                 item.insert();
-                item.getChildren().forEach(item1 -> {
-                    item1.setMerged(true);
-                    item1.insert();
-                });
+                if (item.hasChildren()) {
+                    item.getChildren().forEach(item1 -> {
+                        item1.setMerged(true);
+                        item1.insert();
+                    });
+                }
                 dbItems.add(item);
             }
-        } else {
+        } else if (googleItems != null) {
             // Map<String,T> map = dbItems.stream().collect(Collectors.toMap(Item::getGoogleId, identity()));
             for (T dbItem : dbItems) {
                 for (T googleItem : googleItems) {
@@ -105,12 +107,24 @@ public class TasksLoader implements Callable<List<GTaskList>> {
         if (!remoteTasks.isEmpty()) {
             reconcile(tasksFromDB, remoteTasks);
         }
-        return merge(tasksFromDB, remoteTasks);
+        List<GTaskList> lists = merge(tasksFromDB, remoteTasks);
+        return checkIfEmptyList(lists);
     }
 
-    @Override
-    public List<GTaskList> call() {
+    private List<GTaskList> checkIfEmptyList(List<GTaskList> lists) {
 
-        return getLists();
+        if (lists == null || lists.isEmpty()) {
+            ApplicationCache cache = ApplicationCache.INSTANCE;
+            GTaskList list = new GTaskList();
+            list.title = "My list #";
+            list.setGoogleId(cache.isSyncWithGTasksEnabled() ? list.id : "");
+            list.accountName = cache.accountName();
+            lists = new ArrayList<>(10);
+            lists.add(list);
+            cache.setLists(lists);
+            cache.setActiveList(0);
+            return lists;
+        }
+        return lists;
     }
 }

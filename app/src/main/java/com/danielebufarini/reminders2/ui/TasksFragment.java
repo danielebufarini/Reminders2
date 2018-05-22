@@ -20,7 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
-public class TaskFragment extends Fragment implements Serializable {
+public class TasksFragment extends Fragment implements Serializable {
     public static final String TASK = "task";
     public static final String TASK_POSITION = "task_position";
 
@@ -84,7 +84,7 @@ public class TaskFragment extends Fragment implements Serializable {
         tasks.setOnScrollListener(touchListener.makeScrollListener());
         tasks.setOnItemClickListener((parent, view, position, id) -> {
 
-            Intent viewTask = new Intent(TaskFragment.this.getActivity(), ManageTaskActivity.class);
+            Intent viewTask = new Intent(TasksFragment.this.getActivity(), ManageTaskActivity.class);
             viewTask.putExtra(TASK, adapter.getItem(position));
             viewTask.putExtra(TASK_POSITION, position);
             startActivityForResult(viewTask, Reminders.REFRESH_TASKS);

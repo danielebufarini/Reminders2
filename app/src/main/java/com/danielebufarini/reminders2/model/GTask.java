@@ -3,7 +3,6 @@ package com.danielebufarini.reminders2.model;
 
 import static android.arch.persistence.room.ForeignKey.CASCADE;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -15,8 +14,8 @@ import com.danielebufarini.reminders2.database.TaskDao;
 import com.danielebufarini.reminders2.services.AsyncHandler;
 import com.danielebufarini.reminders2.ui.Reminders;
 import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.api.client.util.DateTime;
-import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.model.Task;
 
 import android.arch.persistence.room.Entity;
@@ -38,6 +37,7 @@ import android.util.Log;
                         onDelete = CASCADE)
         },
         indices = @Index(value = "listId"))
+@JsonIgnoreProperties(value = { "children" })
 public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     private static final long            serialVersionUID        = 987654321L;
@@ -154,31 +154,6 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         task.setStatus(completed != 0 ? TASK_COMPLETED : NEEDS_ACTION);
         if (dueDate > 0) task.setDue(new DateTime(dueDate));
         return task;
-    }
-
-    @Override
-    public void insert(Tasks googleService) throws IOException {
-
-        Task task = newTask();
-        Task newTask = googleService.tasks().insert(listGoogleId, task).execute();
-        setGoogleId(newTask.getId());
-        Log.d(LOGTAG, "google :: inserted task " + this + " in list " + listGoogleId);
-    }
-
-    @Override
-    public void delete(Tasks googleService) throws IOException {
-
-        googleService.tasks().delete(listGoogleId, getGoogleId()).execute();
-        Log.d(LOGTAG, "google :: deleted task " + this + " in list " + listGoogleId);
-    }
-
-    @Override
-    public void merge(Tasks googleService) throws IOException {
-
-        Task task = newTask();
-        task.setId(getGoogleId());
-        googleService.tasks().update(listGoogleId, task.getId(), task).execute();
-        Log.d(LOGTAG, "google :: updated task " + this + " in list " + listGoogleId);
     }
 
     @Override

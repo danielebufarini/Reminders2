@@ -14,7 +14,7 @@
     tools:context=".ui.Reminders">
 
     <fragment
-        android:name="com.danielebufarini.reminders2.ui.TaskFragment"
+        android:name="com.danielebufarini.reminders2.ui.TasksFragment"
         android:id="@+id/tasksFragment"
         android:layout_alignParentTop="true"
         android:layout_width="match_parent"

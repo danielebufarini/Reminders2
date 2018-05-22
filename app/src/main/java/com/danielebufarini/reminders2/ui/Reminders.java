@@ -1,7 +1,6 @@
 
 package com.danielebufarini.reminders2.ui;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,8 +20,6 @@ import com.danielebufarini.reminders2.synchronisation.Source;
 import com.danielebufarini.reminders2.synchronisation.TasksLoader;
 import com.danielebufarini.reminders2.ui.task.ManageTaskActivity;
 import com.danielebufarini.reminders2.util.ApplicationCache;
-import com.danielebufarini.reminders2.util.GoogleAccountHelper;
-import com.danielebufarini.reminders2.util.GoogleService;
 import com.facebook.stetho.Stetho;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -35,8 +32,6 @@ import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveClient;
 import com.google.android.gms.drive.DriveResourceClient;
 import com.google.android.gms.tasks.Task;
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
-import com.google.api.services.tasks.Tasks;
 
 import android.arch.persistence.room.Room;
 import android.content.Context;
@@ -62,7 +57,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
@@ -79,15 +73,13 @@ public class Reminders extends AppCompatActivity
     private static final int              SYNCHRONISE              = 1;
     private static final int              CHANGED_GOOGLE_ACCOUNT   = 2;
     private static final int              REQUEST_CODE_SIGN_IN     = 3;
-    private static final boolean          DONT_SAVE_TASKS          = false;
-    private static final String           LOGTAG                   = "Reminders";
+    private static final String           TAG                      = "Reminders";
     private static final ApplicationCache CACHE                    = ApplicationCache.INSTANCE;
 
     private volatile AtomicInteger        progressBarCounter       = new AtomicInteger();
     private final Map<Integer, Command>   commands                 = new ConcurrentHashMap<>(3);
     private DriveClient                   driveClient;
     private DriveResourceClient           driveResourceClient;
-    private GoogleAccountHelper           accountHelper;
     Spinner                               lists;
 
     @Override
@@ -95,7 +87,6 @@ public class Reminders extends AppCompatActivity
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        accountHelper = new GoogleAccountHelper(this);
         if (CACHE.isSyncWithGTasksEnabled() == null) {
             CACHE.isSyncWithGTasksEnabled(checkGooglePlayServicesAvailable());
         }
@@ -104,17 +95,9 @@ public class Reminders extends AppCompatActivity
         setupWidgets();
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        commands.put(SYNCHRONISE, (requestCode, resultCode, data) -> {
-            if (resultCode == Reminders.RESULT_OK) {
-                saveAuthorisation(CACHE.accountName());
-                CACHE.isSyncWithGTasksEnabled(true);
-                synchroniseAndUpdateUI(true);
-            }
-        });
         commands.put(CHANGED_GOOGLE_ACCOUNT, (requestCode, resultCode, data) -> {
             if (resultCode == Reminders.RESULT_OK) {
                 int position = data.getIntExtra("reminders_position", 0);
-                saveAuthorisation(CACHE.accountName());
                 CACHE.isSyncWithGTasksEnabled(true);
             }
         });
@@ -122,8 +105,10 @@ public class Reminders extends AppCompatActivity
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             if (task.isSuccessful()) {
                 try {
-                    GoogleSignInAccount account = task.getResult(ApiException.class);
-                    setupProfileWidgets(account, navigationView);
+                    GoogleSignInAccount signInAccount = task.getResult(ApiException.class);
+                    initializeDriveClient(signInAccount);
+                    setupProfileWidgets(signInAccount, navigationView);
+                    new GoogleDriveSource(driveResourceClient).query(this);
                 } catch (ApiException e) {
                     CACHE.isSyncWithGTasksEnabled(false);
                 }
@@ -145,6 +130,7 @@ public class Reminders extends AppCompatActivity
         GoogleSignInAccount signInAccount = GoogleSignIn.getLastSignedInAccount(this);
         if (signInAccount != null && signInAccount.getGrantedScopes().containsAll(requiredScopes)) {
             initializeDriveClient(signInAccount);
+            new GoogleDriveSource(driveResourceClient).query(this);
             setupProfileWidgets(signInAccount, navigationView.getHeaderView(0));
         } else {
             GoogleSignInOptions googleSignInOptions = new GoogleSignInOptions.Builder(
@@ -161,6 +147,7 @@ public class Reminders extends AppCompatActivity
      */
     private void initializeDriveClient(GoogleSignInAccount signInAccount) {
 
+        progressBarCounter.incrementAndGet();
         driveClient = Drive.getDriveClient(getApplicationContext(), signInAccount);
         driveResourceClient = Drive.getDriveResourceClient(getApplicationContext(), signInAccount);
         CACHE.isSyncWithGTasksEnabled(true);
@@ -170,7 +157,7 @@ public class Reminders extends AppCompatActivity
     private void setupProfileWidgets(GoogleSignInAccount account, View header) {
 
         String name = account.getAccount().name;
-        authoriseGoogleTasks(name);
+        CACHE.setAccountName(name);
         TextView userName = header.findViewById(R.id.user_name);
         userName.setText(account.getDisplayName());
         TextView accountName = header.findViewById(R.id.account_name);
@@ -184,8 +171,8 @@ public class Reminders extends AppCompatActivity
 
         // final boolean syncWithGoogle = isSyncWithGTasksEnabled && isNetworkAvailable();
         new Thread(new SaveItemsBuilder().setContext(this).setAccountName(CACHE.accountName())
-                .setInMemoryLists(CACHE.getLists()).setDriveClient(driveClient)
-                .setDriveResourceClient(driveResourceClient).build()).start();
+                .setInMemoryLists(CACHE.getLists()).setDriveResourceClient(driveResourceClient)
+                .build()).start();
         super.onStop();
     }
 
@@ -328,32 +315,19 @@ public class Reminders extends AppCompatActivity
                 .isUserRecoverableError(GooglePlayServicesUtil.isGooglePlayServicesAvailable(this));
     }
 
-    private void synchroniseAndUpdateUI(boolean areItemsToBeSaved) {
-
-        progressBarCounter.incrementAndGet();
-        AppCompatActivity activity = this;
-        AsyncHandler.post(() -> {
-            if (areItemsToBeSaved) {
-                new SaveItemsBuilder().setContext(activity).setAccountName(CACHE.accountName())
-                        .setInMemoryLists(new ArrayList<>()).build().run();
-            }
-            new GoogleDriveSource(driveResourceClient).query(this);
-        });
-    }
-
     @Override
     public void googleDriveSourceReady(Source remoteSource) {
 
         AsyncHandler.post(() -> {
             TasksLoader loader = new TasksLoader(CACHE.accountName(), remoteSource);
             List<GTaskList> taskLists = loader.getLists();
-            CACHE.setFolders(taskLists);
-            List<String> folderNames = new ArrayList<>(taskLists.size());
+            CACHE.setLists(taskLists);
+            List<String> listsNames = new ArrayList<>(taskLists.size());
             for (GTaskList list : taskLists) {
-                folderNames.add(list.title);
+                listsNames.add(list.title);
             }
             ArrayAdapter<String> adapter = new ArrayAdapter<>(Reminders.this, android.R.layout.simple_spinner_item,
-                    folderNames);
+                    listsNames);
             // Specify the layout to use when the list of choices appears
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             if (progressBarCounter.decrementAndGet() == 0) {
@@ -368,10 +342,10 @@ public class Reminders extends AppCompatActivity
     private void showTaskFragment() {
 
         FragmentManager fragmentManager = getSupportFragmentManager();
-        TaskFragment fragment = (TaskFragment) fragmentManager.findFragmentById(R.id.main);
+        TasksFragment fragment = (TasksFragment) fragmentManager.findFragmentById(R.id.main);
         if (fragment == null) {
-            TaskFragment taskFragment = new TaskFragment();
-            fragmentManager.beginTransaction().replace(R.id.waiting, taskFragment).commit();
+            TasksFragment tasksFragment = new TasksFragment();
+            fragmentManager.beginTransaction().replace(R.id.waiting, tasksFragment).commit();
             ProgressBar progressBar = findViewById(R.id.waitingProgressBar);
             progressBar.setVisibility(View.GONE);
             lists = findViewById(R.id.lists);
@@ -381,14 +355,14 @@ public class Reminders extends AppCompatActivity
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
-                    CACHE.setActiveFolder(position);
+                    CACHE.setActiveList(position);
                     GTaskList list = CACHE.getLists().get(position);
                     /*
                      * if (list.tasks == null) new Thread(new Runnable() { public void run() { TasksLoader loadItems =
                      * new TasksLoader( Reminders.this, CACHE.isSyncWithGTasksEnabled(), CACHE.accountName());
                      * list.tasks = loadItems.getTasks(list.id); } };
                      */
-                    taskFragment.onListSelected(list.tasks);
+                    tasksFragment.onListSelected(list.tasks);
                 }
 
                 @Override
@@ -399,47 +373,6 @@ public class Reminders extends AppCompatActivity
             FloatingActionButton floatingActionButton = findViewById(R.id.fab);
             floatingActionButton.setVisibility(View.VISIBLE);
         }
-    }
-
-    private interface IfAlreadyAuthorised {
-
-        void doAction();
-    }
-
-    private void authorise(final String accountName, final int requestCode,
-            final IfAlreadyAuthorised ifAlreadyAuthorised, final ImageButton syncButton) {
-
-        if (!isAccountAuthorised(accountName)) {
-            Tasks googleService = GoogleService.getGoogleTasksService(this, accountName);
-            new Thread(() -> {
-                try {
-                    googleService.tasklists().list().setMaxResults(1L).execute();
-                    saveAuthorisation(accountName);
-                    CACHE.isSyncWithGTasksEnabled(true);
-                    ifAlreadyAuthorised.doAction();
-                    Reminders.this.runOnUiThread(() -> {
-                        // syncButton.setVisibility(View.VISIBLE);
-                    });
-                } catch (UserRecoverableAuthIOException userRecoverableException) {
-                    Intent intent = userRecoverableException.getIntent();
-                    intent.putExtra("reminders_position", accountHelper.getIndex(accountName));
-                    startActivityForResult(intent, requestCode);
-                } catch (IOException e) {
-                    Log.e(LOGTAG, "authorise() :: cannot contact google servers - account = \"" + accountName + "\"",
-                            e);
-                }
-            }).start();
-        } else
-            ifAlreadyAuthorised.doAction();
-    }
-
-    private void saveAuthorisation(String accountName) {
-
-        SharedPreferences settings = getApplicationContext().getSharedPreferences(Reminders.class.getName(),
-                Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putBoolean(accountName, true);
-        editor.apply();
     }
 
     private boolean isAccountAuthorised(String accountName) {
@@ -460,12 +393,5 @@ public class Reminders extends AppCompatActivity
         super.onActivityResult(requestCode, resultCode, data);
         Command command = commands.get(requestCode);
         if (command != null) command.execute(requestCode, resultCode, data);
-    }
-
-    private void authoriseGoogleTasks(String accountName) {
-
-        CACHE.accountName(accountName);
-        if (CACHE.getLists().isEmpty())
-            authorise(accountName, SYNCHRONISE, () -> synchroniseAndUpdateUI(DONT_SAVE_TASKS), null);
     }
 }

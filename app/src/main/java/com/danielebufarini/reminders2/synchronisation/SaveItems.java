@@ -1,35 +1,38 @@
 
 package com.danielebufarini.reminders2.synchronisation;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.danielebufarini.reminders2.model.GTaskList;
 import com.danielebufarini.reminders2.model.Item;
 import com.danielebufarini.reminders2.synchronisation.commands.Command;
 import com.danielebufarini.reminders2.synchronisation.commands.DeleteFromDB;
-import com.danielebufarini.reminders2.synchronisation.commands.DeleteFromGoogleTaskAndFromDB;
 import com.danielebufarini.reminders2.synchronisation.commands.InsertInDB;
-import com.danielebufarini.reminders2.synchronisation.commands.InsertInGoogleTaskAndMergeInDB;
 import com.danielebufarini.reminders2.synchronisation.commands.MergeInDB;
-import com.danielebufarini.reminders2.synchronisation.commands.MergeInGoogleTask;
 import com.danielebufarini.reminders2.util.ApplicationCache;
-import com.danielebufarini.reminders2.util.GoogleService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.android.gms.drive.DriveClient;
 import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.DriveResourceClient;
+import com.google.android.gms.drive.Metadata;
+import com.google.android.gms.drive.MetadataBuffer;
 import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.drive.query.Filters;
+import com.google.android.gms.drive.query.Query;
+import com.google.android.gms.drive.query.SearchableField;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.rits.cloning.Cloner;
 
-import android.content.Context;
 import android.util.Log;
 
 public class SaveItems implements Runnable {
@@ -39,21 +42,14 @@ public class SaveItems implements Runnable {
     private static transient final String       TAG    = SaveItems.class.getSimpleName();
 
     private final boolean                       isSyncWithGoogleEnabled;
-    private final DriveClient                   driveClient;
     private final DriveResourceClient           driveResourceClient;
     private final List<GTaskList>               inMemoryLists;
-    private com.google.api.services.tasks.Tasks googleService;
 
-    public SaveItems(Context context, String accountName, List<GTaskList> inMemoryLists, DriveClient driveClient,
-            DriveResourceClient driveResourceClient) {
+    public SaveItems(List<GTaskList> inMemoryLists, DriveResourceClient driveResourceClient) {
 
         this.inMemoryLists = inMemoryLists;// CLONER.deepClone(lists);
         this.isSyncWithGoogleEnabled = ApplicationCache.INSTANCE.isSyncWithGTasksEnabled();
-        this.driveClient = driveClient;
         this.driveResourceClient = driveResourceClient;
-        if (isSyncWithGoogleEnabled) {
-            this.googleService = GoogleService.getGoogleTasksService(context, accountName);
-        }
     }
 
     private List<Command> mergeItems(List<? extends Item> items) {
@@ -63,7 +59,7 @@ public class SaveItems implements Runnable {
         for (Item item : items) {
             if (item.isDeleted) {
                 if (isSyncWithGoogleEnabled) {
-                    commands.add(new DeleteFromGoogleTaskAndFromDB(googleService, item));
+                    commands.add(new DeleteFromDB(item));
                 } else if (item.isStored) {
                     if ("".equals(item.getGoogleId())) {
                         commands.add(new DeleteFromDB(item));
@@ -75,10 +71,8 @@ public class SaveItems implements Runnable {
                 boolean isAlreadyMerged = false;
                 if (isSyncWithGoogleEnabled) {
                     if (item.getGoogleId().isEmpty()) {
-                        commands.add(new InsertInGoogleTaskAndMergeInDB(googleService, item));
+                        commands.add(new MergeInDB(item));
                         isAlreadyMerged = true;
-                    } else if (item.isModified) {
-                        commands.add(new MergeInGoogleTask(googleService, item));
                     }
                 }
                 if (!item.isStored) {
@@ -98,20 +92,57 @@ public class SaveItems implements Runnable {
     @Override
     public void run() {
 
-        String objectsAsJSon;
-        try {
-            Container container = new Container();
-            objectsAsJSon = MAPPER.writeValueAsString(container);
-            createFileInAppFolder(objectsAsJSon);
-        } catch (JsonProcessingException e) {
-            Log.e(TAG, "Marshalling error parsing Java objects", e);
-        }
         List<Command> commands = mergeItems(inMemoryLists);
-        for (Command command : commands)
+        for (Command command : commands) {
             command.execute();
+        }
+        if (!commands.isEmpty()) {
+            try {
+                LocalDatabase database = new LocalDatabase(ApplicationCache.INSTANCE.accountName());
+                String objectsAsJSon = MAPPER.writeValueAsString(new Container(database.getLists()));
+                writeFile(driveContents -> {
+                    OutputStream outputStream = driveContents.getOutputStream();
+                    try (Writer writer = new OutputStreamWriter(outputStream)) {
+                        writer.write(objectsAsJSon);
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error writing serialised data into stream");
+                    }
+                });
+            } catch (JsonProcessingException e) {
+                Log.e(TAG, "Marshalling error parsing Java objects", e);
+            }
+        }
     }
 
-    private void createFileInAppFolder(String fileContent) {
+    private void writeFile(Consumer<DriveContents> consumer) {
+
+        Query query = new Query.Builder().addFilter(Filters.eq(SearchableField.TITLE, "tasks.json")).build();
+        Task<MetadataBuffer> queryTask = driveResourceClient.query(query);
+        queryTask.addOnSuccessListener(metadataBuffer -> {
+            Iterator<Metadata> iterator = metadataBuffer.iterator();
+            if (iterator.hasNext()) {
+                Metadata metadata = iterator.next();
+                Task<DriveContents> openFileTask = driveResourceClient.openFile(metadata.getDriveId().asDriveFile(),
+                        DriveFile.MODE_WRITE_ONLY);
+                openFileTask.continueWithTask(task -> {
+                    DriveContents contents = task.getResult();
+                    consumer.accept(contents);
+                    MetadataChangeSet changeSet = new MetadataChangeSet.Builder().setTitle("tasks.json")
+                            .setMimeType("text/plain").build();
+                    return driveResourceClient.commitContents(contents, changeSet);
+                }).addOnFailureListener(e -> {
+                    Log.e(TAG, "Cannot read serialised tasks file", e);
+                });
+                metadataBuffer.release();
+            } else {
+                createNewFile(consumer);
+            }
+        }).addOnFailureListener(e -> {
+            Log.e(TAG, "Cannot get Google Drive metadatabuffer", e);
+        });
+    }
+
+    private void createNewFile(Consumer<DriveContents> consumer) {
 
         if (ApplicationCache.INSTANCE.isGoogleDriveAvailable()) {
             final Task<DriveFolder> rootFolderTask = driveResourceClient.getRootFolder();
@@ -120,29 +151,29 @@ public class SaveItems implements Runnable {
 
                 DriveFolder parent = rootFolderTask.getResult();
                 DriveContents contents = createContentsTask.getResult();
-                OutputStream outputStream = contents.getOutputStream();
-                try (Writer writer = new OutputStreamWriter(outputStream)) {
-                    writer.write(fileContent);
-                }
+                consumer.accept(contents);
                 MetadataChangeSet changeSet = new MetadataChangeSet.Builder().setTitle("tasks.json")
-                        .setMimeType("text/plain").setStarred(true).build();
+                        .setMimeType("text/plain").build();
                 return driveResourceClient.createFile(parent, changeSet, contents);
             }).addOnSuccessListener(driveFile -> {
-
                 System.out.println(driveFile.toString());
-                // showMessage(getString(R.string.file_created, driveFile.getDriveId().encodeToString()));
-                // finish();
             }).addOnFailureListener(e -> {
-
                 Log.e(TAG, "Unable to create file", e);
-                // showMessage(getString(R.string.file_create_error));
-                // finish();
             });
         }
     }
 
     public static class Container {
 
-        public List<GTaskList> lists = ApplicationCache.INSTANCE.getLists();
+        public List<GTaskList> lists;
+
+        public Container() {
+
+        }
+
+        public Container(List<GTaskList> lists) {
+
+            this.lists = lists;
+        }
     }
 }

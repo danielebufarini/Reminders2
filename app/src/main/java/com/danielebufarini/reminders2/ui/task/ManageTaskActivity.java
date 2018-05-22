@@ -1,5 +1,7 @@
+
 package com.danielebufarini.reminders2.ui.task;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -10,7 +12,7 @@ import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.Priority;
 import com.danielebufarini.reminders2.ui.LocationBasedReminderFragment;
 import com.danielebufarini.reminders2.ui.PagerAdapter;
-import com.danielebufarini.reminders2.ui.TaskFragment;
+import com.danielebufarini.reminders2.ui.TasksFragment;
 import com.danielebufarini.reminders2.ui.TimeBasedReminderFragment;
 import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.danielebufarini.reminders2.util.Dates;
@@ -34,19 +36,19 @@ public class ManageTaskActivity extends AppCompatActivity
         implements TimeBasedReminderFragment.OnReminderDateChangedListener,
         LocationBasedReminderFragment.OnReminderPlaceChangedListener {
 
-    public static final String TIME_FORMAT_STRING = "%02d:%02d";
-    private static final ApplicationCache CACHE = ApplicationCache.INSTANCE;
+    public static final String            TIME_FORMAT_STRING = "%02d:%02d";
+    private static final ApplicationCache CACHE              = ApplicationCache.INSTANCE;
 
-    private TextView dueDateDay, dueDateTime;
-    private EditText title, notes;
-    private Spinner priority;
-    private GTask task = null;
-    private Calendar reminderDate;
-    private Integer taskPosition;
-    private Calendar dueDate;
-    private boolean isEditingExistingTask;
-    private double latitude, longitude;
-    private CharSequence locationTitle;
+    private TextView                      dueDateDay, dueDateTime;
+    private EditText                      title, notes;
+    private Spinner                       priority;
+    private GTask                         task               = null;
+    private Calendar                      reminderDate;
+    private Integer                       taskPosition;
+    private Calendar                      dueDate;
+    private boolean                       isEditingExistingTask;
+    private double                        latitude, longitude;
+    private CharSequence                  locationTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,11 +59,11 @@ public class ManageTaskActivity extends AppCompatActivity
         if (savedInstanceState == null) {
             Bundle extras = getIntent().getExtras();
             if (extras != null) {
-                task = (GTask) extras.get(TaskFragment.TASK);
-                taskPosition = extras.getInt(TaskFragment.TASK_POSITION);
+                task = (GTask) extras.get(TasksFragment.TASK);
+                taskPosition = extras.getInt(TasksFragment.TASK_POSITION);
             }
         } else {
-            task = (GTask) savedInstanceState.getSerializable(TaskFragment.TASK);
+            task = (GTask) savedInstanceState.getSerializable(TasksFragment.TASK);
         }
 
         setupWidgets();
@@ -104,14 +106,14 @@ public class ManageTaskActivity extends AppCompatActivity
             } else {
                 // This activity is part of this app's task, so simply
                 // navigate up to the logical parent activity.
-                upIntent.putExtra(TaskFragment.TASK, task);
-                upIntent.putExtra(TaskFragment.TASK_POSITION, taskPosition);
-                if (getParent() == null) {
-                    setResult(RESULT_OK, upIntent);
-                } else {
-                    getParent().setResult(RESULT_OK, upIntent);
-                }
-                NavUtils.navigateUpTo(this, upIntent);
+                upIntent.putExtra(TasksFragment.TASK, task);
+                upIntent.putExtra(TasksFragment.TASK_POSITION, taskPosition);
+            if (getParent() == null) {
+                setResult(RESULT_OK, upIntent);
+            } else {
+                getParent().setResult(RESULT_OK, upIntent);
+            }
+            NavUtils.navigateUpTo(this, upIntent);
             }
             return true;
         }
@@ -120,10 +122,11 @@ public class ManageTaskActivity extends AppCompatActivity
 
     private void storeItemInDB() {
 
-        if (isEditingExistingTask)
+        if (isEditingExistingTask) {
             task.merge();
-        else
+        } else {
             task.insert();
+        }
     }
 
     private int translatePriorityPosition(int position) {
@@ -135,21 +138,18 @@ public class ManageTaskActivity extends AppCompatActivity
 
         if (!title.getText().toString().equals(task.title)) return true;
         if (!notes.getText().toString().equals(task.notes)) return true;
-        if (reminderDate != null && task.reminderDate != reminderDate.getTimeInMillis())
-            return true;
+        if (reminderDate != null && task.reminderDate != reminderDate.getTimeInMillis()) return true;
         if (isEditingExistingTask && task.dueDate != dueDate.getTimeInMillis()) return true;
-        if (task.priority != translatePriorityPosition(priority.getSelectedItemPosition()))
-            return true;
+        if (task.priority != translatePriorityPosition(priority.getSelectedItemPosition())) return true;
         if (Double.compare(task.latitude, latitude) != 0) return true;
         if (Double.compare(task.longitude, longitude) != 0) return true;
-        if (locationTitle != null && task.locationTitle.equals(locationTitle.toString()))
-            return true;
-        return false;
+        return locationTitle != null && task.locationTitle.equals(locationTitle.toString());
     }
 
     private void updateModel() {
 
         List<GTask> tasks = CACHE.getLists().get(CACHE.getActiveList()).getChildren();
+        if (tasks == null) tasks = new ArrayList<>(20);
         int taskIndex = tasks.indexOf(task);
         if (taskIndex > 0) {
             tasks.remove(tasks.get(taskIndex));
@@ -179,6 +179,7 @@ public class ManageTaskActivity extends AppCompatActivity
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
 
@@ -211,30 +212,21 @@ public class ManageTaskActivity extends AppCompatActivity
                         dueDate.set(Calendar.MONTH, monthOfYear);
                         dueDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
                         dueDateDay.setText(Dates.formatDate(dueDate));
-                    },
-                    dueDate.get(Calendar.YEAR),
-                    dueDate.get(Calendar.MONTH),
-                    dueDate.get(Calendar.DAY_OF_MONTH)
-            );
+                    }, dueDate.get(Calendar.YEAR), dueDate.get(Calendar.MONTH), dueDate.get(Calendar.DAY_OF_MONTH));
             datePickerDialog.show();
         });
         dueDateDay.setText(Dates.formatDate(dueDate));
         dueDateTime = findViewById(R.id.due_date_time);
         dueDateTime.setOnClickListener(v -> {
-            TimePickerDialog datePicker = new TimePickerDialog(ManageTaskActivity.this,
-                    (view, hourOfDay, minute) -> {
-                        dueDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                        dueDate.set(Calendar.MINUTE, minute);
-                        dueDateTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
-                    },
-                    dueDate.get(Calendar.HOUR_OF_DAY),
-                    dueDate.get(Calendar.MINUTE),
-                    true
-            );
+            TimePickerDialog datePicker = new TimePickerDialog(ManageTaskActivity.this, (view, hourOfDay, minute) -> {
+                dueDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                dueDate.set(Calendar.MINUTE, minute);
+                dueDateTime.setText(String.format(TIME_FORMAT_STRING, hourOfDay, minute));
+            }, dueDate.get(Calendar.HOUR_OF_DAY), dueDate.get(Calendar.MINUTE), true);
             datePicker.show();
         });
-        dueDateTime.setText(String.format(TIME_FORMAT_STRING, dueDate.get(Calendar.HOUR_OF_DAY),
-                dueDate.get(Calendar.MINUTE)));
+        dueDateTime.setText(
+                String.format(TIME_FORMAT_STRING, dueDate.get(Calendar.HOUR_OF_DAY), dueDate.get(Calendar.MINUTE)));
         priority = findViewById(R.id.priority);
         priority.setAdapter(new PriorityAdapter(this, R.layout.spinner_priority_task, Priority.PRIORITIES));
     }
@@ -249,23 +241,21 @@ public class ManageTaskActivity extends AppCompatActivity
         if (task.dueDate > 0) {
             dueDate.setTimeInMillis(task.dueDate);
             dueDateDay.setText(Dates.formatDate(dueDate));
-            dueDateTime.setText(String.format(TIME_FORMAT_STRING, dueDate.get(Calendar.HOUR_OF_DAY),
-                    dueDate.get(Calendar.MINUTE)));
+            dueDateTime.setText(
+                    String.format(TIME_FORMAT_STRING, dueDate.get(Calendar.HOUR_OF_DAY), dueDate.get(Calendar.MINUTE)));
         }
         latitude = task.latitude;
         longitude = task.longitude;
         locationTitle = task.locationTitle;
     }
 
-    private static final String EMPTY_STRING = "";
-
     private GTask newEmptyTask() {
 
         GTask task = new GTask();
         task.title = "";
-        task.setGoogleId("");
+        task.setGoogleId(CACHE.isSyncWithGTasksEnabled() ? task.id : "");
         task.accountName = CACHE.accountName();
-        task.notes = EMPTY_STRING;
+        task.notes = "";
         task.priority = Priority.NONE.getPriority();
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;

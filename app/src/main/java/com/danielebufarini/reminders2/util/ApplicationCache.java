@@ -15,9 +15,9 @@ public enum ApplicationCache {
 
     private final static Object listsLock = new Object();
 
-    private List<GTaskList>     folders   = new ArrayList<>();
+    private List<GTaskList>     lists     = new ArrayList<>();
     private AtomicInteger       value;
-    private int                 activeFolder;
+    private int                 activeList;
     private String              accountName;
     private Boolean             isSyncWithGTasksEnabled;
     private GTask               task;
@@ -27,14 +27,14 @@ public enum ApplicationCache {
     public List<GTaskList> getLists() {
 
         synchronized (listsLock) {
-            return Collections.synchronizedList(folders);
+            return Collections.synchronizedList(lists);
         }
     }
 
-    public void setFolders(List<GTaskList> folders) {
+    public void setLists(List<GTaskList> lists) {
 
         synchronized (listsLock) {
-            this.folders = folders;
+            this.lists = lists;
         }
     }
 
@@ -60,12 +60,12 @@ public enum ApplicationCache {
 
     public int getActiveList() {
 
-        return activeFolder;
+        return activeList;
     }
 
-    public void setActiveFolder(int activeFolder) {
+    public void setActiveList(int activeList) {
 
-        this.activeFolder = activeFolder;
+        this.activeList = activeList;
     }
 
     public String accountName() {
@@ -73,7 +73,7 @@ public enum ApplicationCache {
         return accountName;
     }
 
-    public void accountName(String accountName) {
+    public void setAccountName(String accountName) {
 
         this.accountName = accountName;
     }
