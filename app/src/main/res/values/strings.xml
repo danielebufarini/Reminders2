@@ -54,4 +54,5 @@
 
     <string name="alarmPopupTitle1">Reminder</string>
     <string name="alarmPopupTitle2">due</string>
+    <string name="new_subtask">new subtask</string>
 </resources>

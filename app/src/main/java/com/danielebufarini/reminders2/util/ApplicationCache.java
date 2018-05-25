@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.danielebufarini.reminders2.database.RemindersDatabase;
 import com.danielebufarini.reminders2.model.GTask;
 import com.danielebufarini.reminders2.model.GTaskList;
+import com.google.android.gms.drive.DriveResourceClient;
 
 public enum ApplicationCache {
     INSTANCE;
@@ -23,6 +24,18 @@ public enum ApplicationCache {
     private GTask               task;
     private RemindersDatabase   database;
     private volatile boolean    isDriveAvailable;
+
+    public DriveResourceClient getDriveResourceClient() {
+
+        return driveResourceClient;
+    }
+
+    public void setDriveResourceClient(DriveResourceClient driveResourceClient) {
+
+        this.driveResourceClient = driveResourceClient;
+    }
+
+    private DriveResourceClient driveResourceClient;
 
     public List<GTaskList> getLists() {
 
@@ -58,12 +71,17 @@ public enum ApplicationCache {
         return value.getAndIncrement();
     }
 
-    public int getActiveList() {
+    public int getActiveListPosition() {
 
         return activeList;
     }
 
-    public void setActiveList(int activeList) {
+    public GTaskList getActiveList() {
+
+        return lists.get(activeList);
+    }
+
+    public void setActiveListPosition(int activeList) {
 
         this.activeList = activeList;
     }

@@ -16,6 +16,7 @@ import com.danielebufarini.reminders2.ui.TasksFragment;
 import com.danielebufarini.reminders2.ui.TimeBasedReminderFragment;
 import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.danielebufarini.reminders2.util.Dates;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
@@ -36,19 +37,21 @@ public class ManageTaskActivity extends AppCompatActivity
         implements TimeBasedReminderFragment.OnReminderDateChangedListener,
         LocationBasedReminderFragment.OnReminderPlaceChangedListener {
 
-    public static final String            TIME_FORMAT_STRING = "%02d:%02d";
-    private static final ApplicationCache CACHE              = ApplicationCache.INSTANCE;
+    public static final String                  TIME_FORMAT_STRING = "%02d:%02d";
+    private static final ApplicationCache       CACHE              = ApplicationCache.INSTANCE;
+    private static transient final ObjectMapper MAPPER             = new ObjectMapper();
+    private static final String                 TAG                = ManageTaskActivity.class.getSimpleName();
 
-    private TextView                      dueDateDay, dueDateTime;
-    private EditText                      title, notes;
-    private Spinner                       priority;
-    private GTask                         task               = null;
-    private Calendar                      reminderDate;
-    private Integer                       taskPosition;
-    private Calendar                      dueDate;
-    private boolean                       isEditingExistingTask;
-    private double                        latitude, longitude;
-    private CharSequence                  locationTitle;
+    private TextView                            dueDateDay, dueDateTime;
+    private EditText                            title, notes;
+    private Spinner                             priority;
+    private GTask                               task               = null;
+    private Calendar                            reminderDate;
+    private Integer                             taskPosition;
+    private Calendar                            dueDate;
+    private boolean                             isEditingExistingTask;
+    private double                              latitude, longitude;
+    private CharSequence                        locationTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,12 +111,12 @@ public class ManageTaskActivity extends AppCompatActivity
                 // navigate up to the logical parent activity.
                 upIntent.putExtra(TasksFragment.TASK, task);
                 upIntent.putExtra(TasksFragment.TASK_POSITION, taskPosition);
-            if (getParent() == null) {
-                setResult(RESULT_OK, upIntent);
-            } else {
-                getParent().setResult(RESULT_OK, upIntent);
-            }
-            NavUtils.navigateUpTo(this, upIntent);
+                if (getParent() == null) {
+                    setResult(RESULT_OK, upIntent);
+                } else {
+                    getParent().setResult(RESULT_OK, upIntent);
+                }
+                NavUtils.navigateUpTo(this, upIntent);
             }
             return true;
         }
@@ -148,7 +151,7 @@ public class ManageTaskActivity extends AppCompatActivity
 
     private void updateModel() {
 
-        List<GTask> tasks = CACHE.getLists().get(CACHE.getActiveList()).getChildren();
+        List<GTask> tasks = CACHE.getLists().get(CACHE.getActiveListPosition()).getChildren();
         if (tasks == null) tasks = new ArrayList<>(20);
         int taskIndex = tasks.indexOf(task);
         if (taskIndex > 0) {
@@ -259,7 +262,7 @@ public class ManageTaskActivity extends AppCompatActivity
         task.priority = Priority.NONE.getPriority();
         task.updated = System.currentTimeMillis();
         task.isDeleted = false;
-        task.setListId(CACHE.getLists().get(CACHE.getActiveList()).id);
+        task.setListId(CACHE.getLists().get(CACHE.getActiveListPosition()).id);
         return task;
     }
 

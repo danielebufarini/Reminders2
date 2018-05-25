@@ -1,8 +1,13 @@
 package com.danielebufarini.reminders2.ui;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.danielebufarini.reminders2.R;
 import com.danielebufarini.reminders2.model.GTask;
@@ -20,7 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
-public class TasksFragment extends Fragment implements Serializable {
+public class TasksFragment extends Fragment implements Serializable, TaskAdapter.Callback {
     public static final String TASK = "task";
     public static final String TASK_POSITION = "task_position";
 
@@ -47,7 +52,7 @@ public class TasksFragment extends Fragment implements Serializable {
         super.onActivityCreated(savedInstanceState);
 
         ListView tasks = getActivity().findViewById(R.id.tasksList);
-        adapter = new TaskAdapter(getActivity(), R.layout.task, new ArrayList<>(30));
+        adapter = new TaskAdapter(getActivity(), R.layout.task, new ArrayList<>(30), this);
         tasks.setAdapter(adapter);
         SwipeDismissListViewTouchListener touchListener =
                 new SwipeDismissListViewTouchListener(
@@ -105,20 +110,17 @@ public class TasksFragment extends Fragment implements Serializable {
 
         adapter.clear();
         if (tasks != null) {
-            adapter.addAll(flattenTasks(tasks));
+            List<GTask> children = tasks.stream().filter(task -> task.getParentId() != null)
+                    .collect(Collectors.toList());
+            tasks.removeAll(children);
+            Map<String, GTask> map = tasks.stream().collect(toMap(GTask::getId, identity()));
+            children.forEach(task -> {
+                GTask parent = map.get(task.getParentId());
+                int i = tasks.indexOf(parent);
+                tasks.add(i + 1, task);
+            });
+            adapter.addAll(tasks);
         }
-    }
-
-    private List<GTask> flattenTasks(List<GTask> tasks) {
-
-        List<GTask> result = new ArrayList<>(tasks.size() + 20);
-        for (GTask task : tasks) {
-            result.add(task);
-            if (task.hasChildren()) {
-                result.addAll(task.getChildren());
-            }
-        }
-        return result;
     }
 
     public void onRefreshTasksList(GTask task, int position) {

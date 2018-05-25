@@ -116,13 +116,14 @@ public class TasksLoader {
         if (lists == null || lists.isEmpty()) {
             ApplicationCache cache = ApplicationCache.INSTANCE;
             GTaskList list = new GTaskList();
-            list.title = "My list #";
+            list.title = "My list";
             list.setGoogleId(cache.isSyncWithGTasksEnabled() ? list.id : "");
             list.accountName = cache.accountName();
+            list.insert();
             lists = new ArrayList<>(10);
             lists.add(list);
             cache.setLists(lists);
-            cache.setActiveList(0);
+            cache.setActiveListPosition(0);
             return lists;
         }
         return lists;

@@ -6,17 +6,15 @@ import static android.arch.persistence.room.ForeignKey.CASCADE;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import com.danielebufarini.reminders2.database.TaskDao;
 import com.danielebufarini.reminders2.services.AsyncHandler;
+import com.danielebufarini.reminders2.synchronisation.GoogleDriveSource;
 import com.danielebufarini.reminders2.ui.Reminders;
 import com.danielebufarini.reminders2.util.ApplicationCache;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.google.api.client.util.DateTime;
-import com.google.api.services.tasks.model.Task;
 
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
@@ -25,19 +23,8 @@ import android.arch.persistence.room.Index;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-
-
-
-
-@Entity(tableName = "task",
-        foreignKeys = {
-                @ForeignKey(entity = GTaskList.class,
-                        parentColumns = "id",
-                        childColumns = "listId",
-                        onDelete = CASCADE)
-        },
-        indices = @Index(value = "listId"))
-@JsonIgnoreProperties(value = { "children" })
+@Entity(tableName = "task", foreignKeys = {
+        @ForeignKey(entity = GTaskList.class, parentColumns = "id", childColumns = "listId", onDelete = CASCADE) }, indices = @Index(value = "listId"))
 public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     private static final long            serialVersionUID        = 987654321L;
@@ -53,8 +40,6 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     public static final String           INTERVAL_TAG            = " " + SEPARATOR + " interval ";
     public static final SimpleDateFormat DUE_DATE_FORMAT         = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
     public static final SimpleDateFormat REMINDER_DATE_FORMAT    = new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.US);
-
-    private static final String          TASK_COMPLETED          = "completed", NEEDS_ACTION = "needsAction";
     private static final String          LOGTAG                  = GTask.class.getSimpleName();
 
     @Ignore
@@ -72,8 +57,6 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     private String                       parentId;
     private String                       listId;
     private String                       listGoogleId;
-    @Ignore
-    private List<GTask>                  subtasks;
 
     public GTask() {
 
@@ -102,20 +85,20 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
     @Override
     public void insert() {
 
+        isStored = true;
         AsyncHandler.post(() -> {
             TaskDao dao = ApplicationCache.INSTANCE.getDatabase().taskDao();
-            dao.insert(this);
-            isStored = true;
-            if (hasChildren()) {
-                getChildren().forEach(item -> {
-                    dao.insert((GTask) item);
-                    item.isStored = true;
-                });
+            try {
+                dao.insert(this);
+            } catch (Exception e) {
+                isStored = false;
+                Log.e(LOGTAG, e.getMessage());
             }
             if (Reminders.LOGV) {
                 Log.d(LOGTAG, "db :: inserted task " + this + " in list id " + listId);
             }
         });
+        GoogleDriveSource.save();
     }
 
     @Override
@@ -124,13 +107,11 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
         AsyncHandler.post(() -> {
             TaskDao dao = ApplicationCache.INSTANCE.getDatabase().taskDao();
             dao.delete(this);
-            if (hasChildren()) {
-                getChildren().forEach(item -> dao.delete((GTask) item));
-            }
             if (Reminders.LOGV) {
                 Log.d(LOGTAG, "db :: deleted task " + this + " in list id " + listId);
             }
         });
+        GoogleDriveSource.save();
     }
 
     @Override
@@ -142,37 +123,24 @@ public class GTask extends Item implements Comparable<GTask>, Serializable {
                 Log.d(LOGTAG, "db :: updated task " + this + " in list id " + listId);
             }
         });
-    }
-
-    private Task newTask() {
-
-        Task task = new Task();
-        task.setTitle(title);
-        task.setNotes(notes);
-        task.setDeleted(isDeleted);
-        task.setUpdated(new DateTime(updated));
-        task.setStatus(completed != 0 ? TASK_COMPLETED : NEEDS_ACTION);
-        if (dueDate > 0) task.setDue(new DateTime(dueDate));
-        return task;
+        GoogleDriveSource.save();
     }
 
     @Override
     public boolean hasChildren() {
 
-        return subtasks != null && !subtasks.isEmpty();
+        return false;
     }
 
     @Override
     public <T extends Item> List<T> getChildren() {
 
-        if (subtasks == null) subtasks = new ArrayList<>(10);
-        return (List<T>) subtasks;
+        return Collections.emptyList();
     }
 
     @Override
     public <T extends Item> void setChildren(List<T> items) {
 
-        subtasks = (List<GTask>) items;
     }
 
     @Override

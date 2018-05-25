@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.danielebufarini.reminders2.services.AsyncHandler;
+import com.danielebufarini.reminders2.synchronisation.GoogleDriveSource;
 import com.danielebufarini.reminders2.util.ApplicationCache;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.api.client.util.DateTime;
@@ -61,6 +62,7 @@ public class GTaskList extends Item implements Serializable {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().insert(this));
         isStored = true;
+        GoogleDriveSource.save();
         Log.d(LOGTAG, "db :: inserted list " + this);
     }
 
@@ -68,6 +70,7 @@ public class GTaskList extends Item implements Serializable {
     public void delete() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().delete(this));
+        GoogleDriveSource.save();
         Log.d(LOGTAG, "db :: deleted list " + this);
     }
 
@@ -75,6 +78,7 @@ public class GTaskList extends Item implements Serializable {
     public void merge() {
 
         AsyncHandler.post(() -> ApplicationCache.INSTANCE.getDatabase().listDao().update(this));
+        GoogleDriveSource.save();
         Log.d(LOGTAG, "db :: updated list " + this);
     }
 

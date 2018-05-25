@@ -69,6 +69,11 @@ public abstract class Item implements Serializable {
         return id != null ? id.hashCode() : 0;
     }
 
+    public String getId() {
+
+        return id;
+    }
+
     public abstract String getListId();
 
     public abstract void setListId(String listId);

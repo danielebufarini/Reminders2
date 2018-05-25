@@ -2,31 +2,31 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="8dp" >
+    android:padding="8dp">
 
     <TextView
         android:id="@+id/padding"
         android:layout_width="16dp"
         android:layout_height="match_parent"
-        android:layout_marginStart="64dp"
-        android:visibility="gone"
         android:layout_alignParentStart="true"
-        android:color="@android:color/transparent" />
+        android:layout_marginStart="64dp"
+        android:color="@android:color/transparent"
+        android:visibility="gone" />
 
     <CheckBox
         android:id="@+id/item_check"
-        android:layout_marginTop="16dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignEnd="@id/padding"
-        android:layout_alignParentTop="true" />
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="16dp" />
 
     <TextView
         android:id="@+id/item"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="20dp"
         android:layout_toEndOf="@id/item_check"
         android:textColor="@android:color/holo_blue_dark"
         android:textSize="16sp" />
@@ -40,21 +40,46 @@
         android:textColor="@android:color/black"
         android:textSize="12sp" />
 
+    <ImageView
+        android:id="@+id/insert_subtask"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_alignStart="@id/item"
+        android:layout_below="@id/dueDate"
+        android:layout_marginTop="8dp"
+        android:scaleType="fitStart"
+        android:src="@drawable/icons8_plus_50" />
+
+    <EditText
+        android:id="@+id/subtask"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_below="@id/dueDate"
+        android:layout_marginTop="8dp"
+        android:layout_toEndOf="@id/insert_subtask"
+        android:textSize="12sp"
+        android:hint="@string/new_subtask"
+        android:singleLine="true"
+        android:textColor="@android:color/darker_gray" />
+
     <TextView
         android:id="@+id/item_priority"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:background="@drawable/coloured_box"
+        android:layout_height="48dp"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@id/divider"
         android:layout_marginEnd="8dp"
-        android:layout_alignParentEnd="true"/>
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/coloured_box" />
 
     <ImageView
         android:id="@+id/recurring"
         android:layout_width="wrap_content"
         android:layout_height="16dp"
+        android:layout_alignWithParentIfMissing="true"
         android:layout_below="@id/item"
         android:layout_toStartOf="@id/item_priority"
-        android:layout_alignWithParentIfMissing="true"
         android:scaleType="fitCenter"
         android:src="@drawable/recurring" />
 
@@ -71,8 +96,8 @@
         android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1px"
-        android:background="@android:color/black"
+        android:layout_alignParentTop="true"
         android:layout_alignStart="@id/item_check"
-        android:layout_alignParentTop="true"/>
+        android:background="@android:color/black" />
 
 </RelativeLayout>
