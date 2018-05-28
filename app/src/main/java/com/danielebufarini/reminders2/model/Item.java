@@ -31,6 +31,7 @@ public abstract class Item implements Serializable {
     @PrimaryKey
     @NonNull
     public String             id;
+    public long               inserted;
     public long               updated;
     public String             title;
     private String            googleId;
@@ -44,12 +45,13 @@ public abstract class Item implements Serializable {
 
     public Item() {
 
-        id = UUID.randomUUID().toString();
+        this(UUID.randomUUID().toString());
     }
 
     public Item(@NonNull String id) {
 
         this.id = id;
+        inserted = System.currentTimeMillis();
     }
 
     @Override

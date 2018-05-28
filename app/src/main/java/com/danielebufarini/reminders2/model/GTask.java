@@ -15,6 +15,7 @@ import com.danielebufarini.reminders2.services.AsyncHandler;
 import com.danielebufarini.reminders2.synchronisation.GoogleDriveSource;
 import com.danielebufarini.reminders2.ui.Reminders;
 import com.danielebufarini.reminders2.util.ApplicationCache;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
@@ -25,6 +26,7 @@ import android.util.Log;
 
 @Entity(tableName = "task", foreignKeys = {
         @ForeignKey(entity = GTaskList.class, parentColumns = "id", childColumns = "listId", onDelete = CASCADE) }, indices = @Index(value = "listId"))
+@JsonIgnoreProperties(value = { "children" })
 public class GTask extends Item implements Comparable<GTask>, Serializable {
 
     private static final long            serialVersionUID        = 987654321L;

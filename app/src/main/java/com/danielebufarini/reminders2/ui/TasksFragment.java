@@ -114,6 +114,7 @@ public class TasksFragment extends Fragment implements Serializable, TaskAdapter
                     .collect(Collectors.toList());
             tasks.removeAll(children);
             Map<String, GTask> map = tasks.stream().collect(toMap(GTask::getId, identity()));
+            children.sort((task1, task2) -> Long.compare(task2.inserted, task1.inserted));
             children.forEach(task -> {
                 GTask parent = map.get(task.getParentId());
                 int i = tasks.indexOf(parent);
